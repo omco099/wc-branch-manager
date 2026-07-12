@@ -1,0 +1,14 @@
+{
+  "name": "alnaseeg/branch-manager",
+  "description": "Initial plugin architecture skeleton for Alnaseeg Branch Manager.",
+  "type": "wordpress-plugin",
+  "require": {
+    "php": "^8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Alnaseeg\\BranchManager\\": "src/"
+    }
+  },
+  "minimum-stability": "stable"
+}
