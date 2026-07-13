@@ -53,8 +53,6 @@ final class Installer
 
             slug VARCHAR(255) NOT NULL,
 
-            page_id BIGINT UNSIGNED NULL,
-
             status VARCHAR(20) NOT NULL DEFAULT 'active',
 
             created_at DATETIME NOT NULL,
@@ -63,9 +61,7 @@ final class Installer
 
             PRIMARY KEY (id),
 
-            UNIQUE KEY slug (slug),
-
-            KEY page_id (page_id)
+            UNIQUE KEY slug (slug)
 
         ) {$charsetCollate};";
     }
