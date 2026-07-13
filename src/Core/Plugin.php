@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Core;
 
+use Alnaseeg\BranchManager\Admin\Menu;
+
 /**
  * Main plugin application.
- *
- * Responsible for bootstrapping all plugin modules.
  */
 final class Plugin
 {
-    /**
-     * Boot the plugin.
-     */
     public function boot(): void
     {
         $this->registerModules();
@@ -28,9 +25,16 @@ final class Plugin
     }
 
     /**
-     * Register plugin hooks.
+     * Register WordPress hooks.
      */
     private function registerHooks(): void
     {
+        add_action(
+            'admin_menu',
+            [
+                new Menu(),
+                'register',
+            ]
+        );
     }
 }
