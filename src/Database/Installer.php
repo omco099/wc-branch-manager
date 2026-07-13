@@ -29,6 +29,8 @@ final class Installer
 
         dbDelta($queries);
 
+        $this->seedBranches();
+
         update_option(
             'wcbm_db_version',
             self::DB_VERSION
@@ -107,5 +109,60 @@ final class Installer
             KEY branch_id (branch_id)
 
         ) {$charsetCollate};";
+    }
+
+    /**
+     * Insert default branches.
+     */
+    private function seedBranches(): void
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . self::BRANCHES_TABLE;
+
+        $count = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$table}"
+        );
+
+        if ($count > 0) {
+            return;
+        }
+
+        $now = current_time('mysql', true);
+
+        $branches = [
+            [
+                'name' => 'مول عمان',
+                'slug' => 'mall-of-oman',
+            ],
+            [
+                'name' => 'فرع العريمي',
+                'slug' => 'al-arimi',
+            ],
+            [
+                'name' => 'فرع نزوى',
+                'slug' => 'nizwa',
+            ],
+        ];
+
+        foreach ($branches as $branch) {
+            $wpdb->insert(
+                $table,
+                [
+                    'name'       => $branch['name'],
+                    'slug'       => $branch['slug'],
+                    'status'     => 'active',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    '%s',
+                    '%s',
+                    '%s',
+                    '%s',
+                    '%s',
+                ]
+            );
+        }
     }
 }
