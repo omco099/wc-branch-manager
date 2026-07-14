@@ -7,8 +7,7 @@ namespace Alnaseeg\BranchManager\Product;
 use WP_Post;
 
 /**
- * Registers and renders the Branch Pricing meta box
- * on WooCommerce product edit screens.
+ * Product Branch Pricing Meta Box.
  */
 final class ProductMetaBox
 {
@@ -45,27 +44,121 @@ final class ProductMetaBox
     {
         wp_nonce_field(
             'wcbm_save_product_branches',
-            'wcbm_nonce'
+            'wcbm_branch_nonce'
         );
 
-        ?>
+        $branches = [
+            1 => 'مول عمان',
+            2 => 'فرع العريمي',
+            3 => 'فرع نزوى',
+        ];
 
+        ?>
         <div class="wcbm-product-branches">
 
-            <p>
+            <?php foreach ($branches as $branchId => $branchName) : ?>
 
-                <strong><?php esc_html_e('Branch pricing will appear here.', 'alnaseeg-branch-manager'); ?></strong>
+                <div class="postbox" style="margin-bottom:20px;padding:15px;">
 
-            </p>
+                    <h3 style="margin-top:0;">
+                        <?php echo esc_html($branchName); ?>
+                    </h3>
 
-            <p>
+                    <table class="form-table" role="presentation">
 
-                <?php esc_html_e(
-                    'Next step: build pricing and stock fields for the three branches.',
-                    'alnaseeg-branch-manager'
-                ); ?>
+                        <tr>
 
-            </p>
+                            <th scope="row">
+                                <label>
+                                    <?php esc_html_e('Regular Price', 'alnaseeg-branch-manager'); ?>
+                                </label>
+                            </th>
+
+                            <td>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    class="regular-text"
+                                    name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][regular_price]"
+                                    value=""
+                                >
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th scope="row">
+                                <label>
+                                    <?php esc_html_e('Sale Price', 'alnaseeg-branch-manager'); ?>
+                                </label>
+                            </th>
+
+                            <td>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    class="regular-text"
+                                    name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][sale_price]"
+                                    value=""
+                                >
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th scope="row">
+                                <label>
+                                    <?php esc_html_e('Stock Quantity', 'alnaseeg-branch-manager'); ?>
+                                </label>
+                            </th>
+
+                            <td>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    class="small-text"
+                                    name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][stock_quantity]"
+                                    value=""
+                                >
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th scope="row">
+                                <label>
+                                    <?php esc_html_e('Enable Branch', 'alnaseeg-branch-manager'); ?>
+                                </label>
+                            </th>
+
+                            <td>
+
+                                <label>
+
+                                    <input
+                                        type="checkbox"
+                                        name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][enabled]"
+                                        value="1"
+                                    >
+
+                                    <?php esc_html_e('Enabled', 'alnaseeg-branch-manager'); ?>
+
+                                </label>
+
+                            </td>
+
+                        </tr>
+
+                    </table>
+
+                </div>
+
+            <?php endforeach; ?>
 
         </div>
 
