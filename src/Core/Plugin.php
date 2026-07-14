@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Alnaseeg\BranchManager\Core;
 
 use Alnaseeg\BranchManager\Admin\Menu;
+use Alnaseeg\BranchManager\Product\ProductMetaBox;
 
 /**
  * Main plugin application.
  */
 final class Plugin
 {
+    /**
+     * Boot the plugin.
+     */
     public function boot(): void
     {
         $this->registerModules();
@@ -22,6 +26,7 @@ final class Plugin
      */
     private function registerModules(): void
     {
+        (new ProductMetaBox())->register();
     }
 
     /**
