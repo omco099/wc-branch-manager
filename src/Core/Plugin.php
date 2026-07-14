@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Alnaseeg\BranchManager\Core;
 
 use Alnaseeg\BranchManager\Admin\Menu;
-use Alnaseeg\BranchManager\Product\ProductMetaBox;
+use Alnaseeg\BranchManager\Product\ProductDataPanel;
+use Alnaseeg\BranchManager\Product\ProductDataTab;
 
 /**
  * Main plugin application.
@@ -26,7 +27,9 @@ final class Plugin
      */
     private function registerModules(): void
     {
-        (new ProductMetaBox())->register();
+        (new ProductDataTab())->register();
+
+        (new ProductDataPanel())->register();
     }
 
     /**
