@@ -30,6 +30,8 @@ final class Plugin
         (new ProductDataTab())->register();
 
         (new ProductDataPanel())->register();
+
+        (new ProductSaver())->register();
     }
 
     /**

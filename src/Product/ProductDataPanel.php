@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Product;
 
+use Alnaseeg\BranchManager\Branch\BranchRepository;
+use WP_Post;
+
 /**
  * Registers the Branch Data panel inside WooCommerce Product Data.
  */
@@ -25,6 +28,24 @@ final class ProductDataPanel
      */
     public function render(): void
     {
+        global $wpdb, $post;
+
+        if (! $post instanceof WP_Post) {
+            return;
+        }
+
+        $branchRepository = new BranchRepository($wpdb);
+
+        $productRepository = new ProductRepository($wpdb);
+
+        $productFields = new ProductFields();
+
+        $branches = $branchRepository->all();
+
+        $productData = $productRepository->findByProduct(
+            (int) $post->ID
+        );
+
         ?>
 
         <div
@@ -32,31 +53,14 @@ final class ProductDataPanel
             class="panel woocommerce_options_panel hidden"
         >
 
-            <div class="options_group">
+            <?php
 
-                <p>
+            $productFields->render(
+                $branches,
+                $productData
+            );
 
-                    <strong>
-
-                        <?php esc_html_e(
-                            'Branch Data',
-                            'alnaseeg-branch-manager'
-                        ); ?>
-
-                    </strong>
-
-                </p>
-
-                <p>
-
-                    <?php esc_html_e(
-                        'Branch pricing and stock fields will appear here.',
-                        'alnaseeg-branch-manager'
-                    ); ?>
-
-                </p>
-
-            </div>
+            ?>
 
         </div>
 
