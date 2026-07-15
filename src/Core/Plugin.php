@@ -7,6 +7,7 @@ namespace Alnaseeg\BranchManager\Core;
 use Alnaseeg\BranchManager\Admin\Menu;
 use Alnaseeg\BranchManager\Product\ProductDataPanel;
 use Alnaseeg\BranchManager\Product\ProductDataTab;
+use Alnaseeg\BranchManager\Product\ProductSaver;
 
 /**
  * Main plugin application.
