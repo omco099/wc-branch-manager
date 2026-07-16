@@ -55,6 +55,11 @@ final class ProductDataPanel
 
             <?php
 
+            wp_nonce_field(
+                'wcbm_save_product_branches',
+                'wcbm_branch_nonce'
+            );
+
             $productFields->render(
                 $branches,
                 $productData
