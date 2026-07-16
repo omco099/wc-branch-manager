@@ -29,11 +29,19 @@ final class ProductSaver
      */
     public function save(int $productId): void
     {
+        error_log('========== WCBM SAVE START ==========');
+        error_log('Product ID: ' . $productId);
+
         if (! $this->isValidRequest($productId)) {
+            error_log('Validation failed.');
             return;
         }
 
+        error_log('Validation passed.');
+
         $branches = $this->collectBranchData();
+
+        error_log(print_r($branches, true));
 
         global $wpdb;
 
@@ -43,6 +51,9 @@ final class ProductSaver
             $productId,
             $branches
         );
+
+        error_log('Repository save finished.');
+        error_log('========== WCBM SAVE END ==========');
     }
 
     /**
@@ -51,10 +62,12 @@ final class ProductSaver
     private function isValidRequest(int $productId): bool
     {
         if (! current_user_can('edit_product', $productId)) {
+            error_log('Permission failed.');
             return false;
         }
 
         if (! isset($_POST['wcbm_branch_nonce'])) {
+            error_log('Nonce field missing.');
             return false;
         }
 
@@ -68,6 +81,7 @@ final class ProductSaver
                 'wcbm_save_product_branches'
             )
         ) {
+            error_log('Nonce verification failed.');
             return false;
         }
 
@@ -75,6 +89,7 @@ final class ProductSaver
             ! isset($_POST['wcbm_branch'])
             || ! is_array($_POST['wcbm_branch'])
         ) {
+            error_log('Branch data missing.');
             return false;
         }
 
