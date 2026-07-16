@@ -4,69 +4,38 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Product;
 
-use Alnaseeg\BranchManager\Branch\BranchRepository;
-use WP_Post;
-
 /**
- * Registers the Branch Data panel inside WooCommerce Product Data.
+ * Registers the Branch Data tab inside WooCommerce Product Data.
  */
-final class ProductDataPanel
+final class ProductDataTab
 {
     /**
      * Register WordPress hooks.
      */
     public function register(): void
     {
-        add_action(
-            'woocommerce_product_data_panels',
-            [$this, 'render']
+        add_filter(
+            'woocommerce_product_data_tabs',
+            [$this, 'addTab']
         );
     }
 
     /**
-     * Render the Branch Data panel.
+     * Add the Branch Data tab.
+     *
+     * @param array<string,mixed> $tabs
+     *
+     * @return array<string,mixed>
      */
-    public function render(): void
+    public function addTab(array $tabs): array
     {
-        global $wpdb, $post;
+        $tabs['wcbm_branch_data'] = [
+            'label'    => __('Branch Data', 'alnaseeg-branch-manager'),
+            'target'   => 'wcbm_branch_data_panel',
+            'class'    => [],
+            'priority' => 80,
+        ];
 
-        if (! $post instanceof WP_Post) {
-            return;
-        }
-
-        $branchRepository = new BranchRepository($wpdb);
-
-        $productRepository = new ProductRepository($wpdb);
-
-        $productFields = new ProductFields();
-
-        $branches = $branchRepository->all();
-
-        $productData = $productRepository->findByProduct(
-            (int) $post->ID
-        );
-
-        ?>
-
-        <div
-            id="wcbm_branch_data_panel"
-            class="panel woocommerce_options_panel hidden"
-        >
-
-            <?php
-            wp_nonce_field(
-                'wcbm_save_product_branches',
-                'wcbm_branch_nonce'
-            );
-
-            $productFields->render(
-                $branches,
-                $productData
-            );
-            ?>
-
-        </div>
-
-        <?php
+        return $tabs;
     }
 }
