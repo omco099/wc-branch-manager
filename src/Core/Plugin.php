@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Core;
 
+use wpdb;
 use Alnaseeg\BranchManager\Admin\Menu;
 use Alnaseeg\BranchManager\Product\ProductDataPanel;
 use Alnaseeg\BranchManager\Product\ProductDataTab;
@@ -46,6 +47,73 @@ final class Plugin
                 new Menu(),
                 'register',
             ]
+        );
+
+        global $wpdb;
+
+        /** @var wpdb $wpdb */
+        $services = new Services($wpdb);
+
+        $priceResolver = $services->productPriceResolver();
+
+        add_filter(
+            'woocommerce_product_get_price',
+            static fn ($price, $product) => $priceResolver->price(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_get_regular_price',
+            static fn ($price, $product) => $priceResolver->regularPrice(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_get_sale_price',
+            static fn ($price, $product) => $priceResolver->salePrice(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_price',
+            static fn ($price, $product) => $priceResolver->price(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_regular_price',
+            static fn ($price, $product) => $priceResolver->regularPrice(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_sale_price',
+            static fn ($price, $product) => $priceResolver->salePrice(
+                $product->get_id(),
+                $price
+            ),
+            10,
+            2
         );
     }
 }

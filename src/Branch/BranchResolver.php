@@ -4,50 +4,71 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Branch;
 
-use wpdb;
-
 /**
- * Resolves the current branch from the current request.
+ * Resolves the current branch.
  */
 final class BranchResolver
 {
     /**
-     * Branch repository.
+     * Create a new resolver instance.
      */
-    private BranchRepository $branches;
-
-    public function __construct()
-    {
-        global $wpdb;
-
-        $this->branches = new BranchRepository($wpdb);
+    public function __construct(
+        private readonly BranchRepository $branches,
+        private readonly BranchSession $session,
+        private readonly BranchContext $context
+    ) {
     }
 
     /**
-     * Resolve current branch.
+     * Resolve the current branch.
      */
     public function resolve(): ?Branch
     {
-        $slug = $this->currentSlug();
+        if ($this->context->has()) {
+            return $this->context->current();
+        }
 
-        if ($slug === '') {
+        $branchId = $this->session->get();
+
+        if ($branchId === null) {
             return null;
         }
 
-        return $this->branches->findBySlug($slug);
+        $branch = $this->branches->findById($branchId);
+
+        if ($branch === null) {
+            $this->session->clear();
+
+            return null;
+        }
+
+        $this->context->set($branch);
+
+        return $branch;
     }
 
     /**
-     * Get current page slug.
+     * Get the current branch if available.
      */
-    private function currentSlug(): string
+    public function current(): ?Branch
     {
-        $post = get_queried_object();
+        return $this->resolve();
+    }
 
-        if (! $post instanceof \WP_Post) {
-            return '';
-        }
+    /**
+     * Determine whether a branch has been resolved.
+     */
+    public function has(): bool
+    {
+        return $this->resolve() !== null;
+    }
 
-        return (string) $post->post_name;
+    /**
+     * Clear the resolved branch.
+     */
+    public function clear(): void
+    {
+        $this->context->clear();
+        $this->session->clear();
     }
 }

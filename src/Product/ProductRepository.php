@@ -69,6 +69,52 @@ final class ProductRepository
     }
 
     /**
+     * Get branch data for a single product branch.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findBranch(
+        int $productId,
+        int $branchId
+    ): ?array {
+
+        $row = $this->database->get_row(
+            $this->database->prepare(
+                "
+                SELECT
+                    regular_price,
+                    sale_price,
+                    stock_quantity,
+                    manage_stock,
+                    stock_status,
+                    is_enabled
+                FROM {$this->table}
+                WHERE product_id = %d
+                  AND branch_id = %d
+                  AND is_enabled = 1
+                LIMIT 1
+                ",
+                $productId,
+                $branchId
+            ),
+            ARRAY_A
+        );
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'regular_price'  => (float) $row['regular_price'],
+            'sale_price'     => $row['sale_price'] === '' ? '' : (float) $row['sale_price'],
+            'stock_quantity' => (int) $row['stock_quantity'],
+            'manage_stock'   => (bool) $row['manage_stock'],
+            'stock_status'   => (string) $row['stock_status'],
+            'is_enabled'     => (bool) $row['is_enabled'],
+        ];
+    }
+
+    /**
      * Persist branch data for a product.
      *
      * @param array<int,array<string,mixed>> $branches
