@@ -8,9 +8,11 @@ use wpdb;
 use Alnaseeg\BranchManager\Branch\BranchContext;
 use Alnaseeg\BranchManager\Branch\BranchRepository;
 use Alnaseeg\BranchManager\Branch\BranchResolver;
+use Alnaseeg\BranchManager\Branch\BranchSelector;
 use Alnaseeg\BranchManager\Branch\BranchSession;
 use Alnaseeg\BranchManager\Product\ProductPriceResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
+use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
 
 /**
  * Creates and stores application services.
@@ -66,6 +68,19 @@ final class Services
                 $this->branchRepository(),
                 $this->branchSession(),
                 $this->branchContext()
+            );
+    }
+
+    /**
+     * Branch selector.
+     */
+    public function branchSelector(): BranchSelector
+    {
+        return $this->services[__METHOD__]
+            ??= new BranchSelector(
+                $this->branchRepository(),
+                $this->branchSession(),
+                $this->branchSelectorRenderer()
             );
     }
 

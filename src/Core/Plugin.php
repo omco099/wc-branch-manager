@@ -54,6 +54,9 @@ final class Plugin
         /** @var wpdb $wpdb */
         $services = new Services($wpdb);
 
+        // Register Branch Selector
+        $services->branchSelector()->register();
+
         $priceResolver = $services->productPriceResolver();
 
         add_filter(
