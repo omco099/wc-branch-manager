@@ -113,6 +113,33 @@ final class ProductRepository
             'is_enabled'     => (bool) $row['is_enabled'],
         ];
     }
+    
+    /**
+     * Get enabled product IDs for a branch.
+     *
+     * @return int[]
+     */
+    public function findProductsByBranch(int $branchId): array
+    {
+        $productIds = $this->database->get_col(
+            $this->database->prepare(
+                "
+                SELECT product_id
+                FROM {$this->table}
+                WHERE branch_id = %d
+                  AND is_enabled = 1
+                ORDER BY product_id ASC
+                ",
+                $branchId
+            )
+        );
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        return array_map('intval', $productIds);
+    }
 
     /**
      * Persist branch data for a product.

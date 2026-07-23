@@ -10,9 +10,10 @@ use Alnaseeg\BranchManager\Branch\BranchRepository;
 use Alnaseeg\BranchManager\Branch\BranchResolver;
 use Alnaseeg\BranchManager\Branch\BranchSelector;
 use Alnaseeg\BranchManager\Branch\BranchSession;
+use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
+use Alnaseeg\BranchManager\Branch\PageBranchResolver;
 use Alnaseeg\BranchManager\Product\ProductPriceResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
-use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
 
 /**
  * Creates and stores application services.
@@ -59,6 +60,17 @@ final class Services
     }
 
     /**
+     * Resolve branch from current page.
+     */
+    public function pageBranchResolver(): PageBranchResolver
+    {
+        return $this->services[__METHOD__]
+            ??= new PageBranchResolver(
+                $this->branchRepository()
+            );
+    }
+
+    /**
      * Branch resolver.
      */
     public function branchResolver(): BranchResolver
@@ -67,7 +79,8 @@ final class Services
             ??= new BranchResolver(
                 $this->branchRepository(),
                 $this->branchSession(),
-                $this->branchContext()
+                $this->branchContext(),
+                $this->pageBranchResolver()
             );
     }
 

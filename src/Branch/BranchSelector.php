@@ -8,7 +8,8 @@ final class BranchSelector
 {
     public function __construct(
         private readonly BranchRepository $branches,
-        private readonly BranchSession $session
+        private readonly BranchSession $session,
+        private readonly BranchSelectorRenderer $renderer
     ) {
     }
 
@@ -27,45 +28,10 @@ final class BranchSelector
      */
     public function render(): string
     {
-        $branches = $this->branches->all();
-
-        if (empty($branches)) {
-            return '';
-        }
-
-        $currentBranchId = $this->session->get();
-
-        ob_start();
-        ?>
-
-        <form method="post" class="abm-branch-selector">
-
-            <?php wp_nonce_field('abm_select_branch', 'abm_nonce'); ?>
-
-            <select name="branch_id">
-
-                <?php foreach ($branches as $branch) : ?>
-
-                    <option
-                        value="<?php echo esc_attr((string) $branch['id']); ?>"
-                        <?php selected($currentBranchId, (int) $branch['id']); ?>
-                    >
-                        <?php echo esc_html($branch['name']); ?>
-                    </option>
-
-                <?php endforeach; ?>
-
-            </select>
-
-            <button type="submit" name="abm_select_branch">
-                <?php esc_html_e('Select Branch', 'alnaseeg'); ?>
-            </button>
-
-        </form>
-
-        <?php
-
-        return (string) ob_get_clean();
+        return $this->renderer->render(
+            $this->branches->all(),
+            $this->session->get()
+        );
     }
 
     /**
