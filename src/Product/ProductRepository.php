@@ -57,7 +57,7 @@ final class ProductRepository
         foreach ($rows as $row) {
             $branches[(int) $row['branch_id']] = [
                 'regular_price'  => (float) $row['regular_price'],
-                'sale_price'     => $row['sale_price'] === '' ? '' : (float) $row['sale_price'],
+                'sale_price'     => $this->normalizeSalePrice($row['sale_price'] ?? null),
                 'stock_quantity' => (int) $row['stock_quantity'],
                 'manage_stock'   => (bool) $row['manage_stock'],
                 'stock_status'   => (string) $row['stock_status'],
@@ -106,14 +106,14 @@ final class ProductRepository
 
         return [
             'regular_price'  => (float) $row['regular_price'],
-            'sale_price'     => $row['sale_price'] === '' ? '' : (float) $row['sale_price'],
+            'sale_price'     => $this->normalizeSalePrice($row['sale_price'] ?? null),
             'stock_quantity' => (int) $row['stock_quantity'],
             'manage_stock'   => (bool) $row['manage_stock'],
             'stock_status'   => (string) $row['stock_status'],
             'is_enabled'     => (bool) $row['is_enabled'],
         ];
     }
-    
+
     /**
      * Get enabled product IDs for a branch.
      *
@@ -162,7 +162,9 @@ final class ProductRepository
             )
         );
 
-        $existing = array_flip(array_map('intval', $existing));
+        $existing = array_flip(
+            array_map('intval', $existing)
+        );
 
         foreach ($branches as $branchId => $branch) {
 
@@ -198,14 +200,15 @@ final class ProductRepository
         array $branch
     ): void {
 
+        $data = $this->prepareData(
+            $productId,
+            $branchId,
+            $branch
+        );
+
         $this->database->insert(
             $this->table,
-            $this->prepareData(
-                $productId,
-                $branchId,
-                $branch
-            ),
-            $this->formats()
+            $data
         );
     }
 
@@ -220,21 +223,18 @@ final class ProductRepository
         array $branch
     ): void {
 
+        $data = $this->prepareData(
+            $productId,
+            $branchId,
+            $branch
+        );
+
         $this->database->update(
             $this->table,
-            $this->prepareData(
-                $productId,
-                $branchId,
-                $branch
-            ),
+            $data,
             [
                 'product_id' => $productId,
                 'branch_id'  => $branchId,
-            ],
-            $this->formats(),
-            [
-                '%d',
-                '%d',
             ]
         );
     }
@@ -243,6 +243,7 @@ final class ProductRepository
      * Prepare row data.
      *
      * @param array<string,mixed> $branch
+     *
      * @return array<string,mixed>
      */
     private function prepareData(
@@ -251,11 +252,15 @@ final class ProductRepository
         array $branch
     ): array {
 
+        $salePrice = $branch['sale_price'] ?? null;
+
         return [
             'product_id'     => $productId,
             'branch_id'      => $branchId,
             'regular_price'  => $branch['regular_price'],
-            'sale_price'     => $branch['sale_price'],
+            'sale_price'     => $salePrice === '' || $salePrice === null
+                ? null
+                : $salePrice,
             'stock_quantity' => $branch['stock_quantity'],
             'manage_stock'   => $branch['manage_stock'],
             'stock_status'   => $branch['stock_status'],
@@ -265,22 +270,19 @@ final class ProductRepository
     }
 
     /**
-     * Database formats.
+     * Normalize the branch sale price.
      *
-     * @return array<int,string>
+     * An empty or NULL database value means
+     * that the product is not on sale.
      */
-    private function formats(): array
-    {
-        return [
-            '%d',
-            '%d',
-            '%f',
-            '%f',
-            '%d',
-            '%d',
-            '%s',
-            '%d',
-            '%s',
-        ];
+    private function normalizeSalePrice(
+        mixed $salePrice
+    ): float|string {
+
+        if ($salePrice === null || $salePrice === '') {
+            return '';
+        }
+
+        return (float) $salePrice;
     }
 }
