@@ -67,22 +67,6 @@ final class Plugin
          */
         $services->branchProductsShortcode()->register();
 
-        add_action(
-    'wp_footer',
-    static function (): void {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
-
-        echo '<div style="position:fixed;bottom:10px;right:10px;z-index:999999;background:#fff;padding:10px;border:2px solid #000;">';
-
-        echo shortcode_exists('branch_products')
-            ? 'branch_products: REGISTERED'
-            : 'branch_products: NOT REGISTERED';
-
-        echo '</div>';
-    }
-);
         /*
          * Register branch-specific product price filters.
          */

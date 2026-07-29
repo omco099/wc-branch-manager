@@ -6,6 +6,7 @@ namespace Alnaseeg\BranchManager\Shortcodes;
 
 use Alnaseeg\BranchManager\Branch\BranchResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
+use WP_Query;
 
 /**
  * Handles the branch products shortcode.
@@ -34,11 +35,17 @@ final class BranchProductsShortcode
 
     /**
      * Render the branch products shortcode.
+     *
+     * @param array<string,mixed> $attributes
      */
     public function render(
         array $attributes = [],
         ?string $content = null
     ): string {
+        if (!function_exists('WC')) {
+            return '';
+        }
+
         $branch = $this->branchResolver->resolve();
 
         if ($branch === null) {
@@ -53,29 +60,37 @@ final class BranchProductsShortcode
             return '';
         }
 
-        if (!current_user_can('manage_woocommerce')) {
+        $query = new WP_Query([
+            'post_type'              => 'product',
+            'post_status'            => 'publish',
+            'post__in'               => $productIds,
+            'posts_per_page'         => -1,
+            'orderby'                => 'post__in',
+            'ignore_sticky_posts'    => true,
+            'no_found_rows'          => true,
+        ]);
+
+        if (!$query->have_posts()) {
             return '';
         }
 
-        $output = '<div class="abm-branch-products-debug">';
+        ob_start();
 
-        $output .= '<strong>Branch:</strong> ';
-        $output .= esc_html($branch->name());
+        woocommerce_product_loop_start();
 
-        $output .= '<br>';
+        while ($query->have_posts()) {
+            $query->the_post();
 
-        $output .= '<strong>Branch ID:</strong> ';
-        $output .= esc_html((string) $branch->id());
+            wc_get_template_part(
+                'content',
+                'product'
+            );
+        }
 
-        $output .= '<br>';
+        woocommerce_product_loop_end();
 
-        $output .= '<strong>Product IDs:</strong> ';
-        $output .= esc_html(
-            implode(', ', $productIds)
-        );
+        wp_reset_postdata();
 
-        $output .= '</div>';
-
-        return $output;
+        return (string) ob_get_clean();
     }
 }
