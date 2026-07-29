@@ -49,6 +49,14 @@ final class Plugin
             ]
         );
 
+        /*
+         * Register frontend assets.
+         */
+        add_action(
+            'wp_enqueue_scripts',
+            [$this, 'enqueueFrontendAssets']
+        );
+
         global $wpdb;
 
         /** @var wpdb $wpdb */
@@ -130,6 +138,46 @@ final class Plugin
             ),
             10,
             2
+        );
+    }
+
+    /**
+     * Enqueue frontend slider assets.
+     */
+    public function enqueueFrontendAssets(): void
+    {
+        wp_enqueue_style(
+            'abm-swiper',
+            'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+            [],
+            '11'
+        );
+
+        wp_enqueue_style(
+            'abm-branch-products',
+            ALNASEEG_BRANCH_MANAGER_PLUGIN_URL . 'assets/css/branch-products.css',
+            [
+                'abm-swiper',
+            ],
+            ALNASEEG_BRANCH_MANAGER_PLUGIN_VERSION
+        );
+
+        wp_enqueue_script(
+            'abm-swiper',
+            'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+            [],
+            '11',
+            true
+        );
+
+        wp_enqueue_script(
+            'abm-branch-products',
+            ALNASEEG_BRANCH_MANAGER_PLUGIN_URL . 'assets/js/branch-products.js',
+            [
+                'abm-swiper',
+            ],
+            ALNASEEG_BRANCH_MANAGER_PLUGIN_VERSION,
+            true
         );
     }
 }

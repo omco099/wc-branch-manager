@@ -34,7 +34,7 @@ final class BranchProductsShortcode
     }
 
     /**
-     * Render the branch products shortcode.
+     * Render the branch products slider.
      *
      * @param array<string,mixed> $attributes
      */
@@ -61,13 +61,13 @@ final class BranchProductsShortcode
         }
 
         $query = new WP_Query([
-            'post_type'              => 'product',
-            'post_status'            => 'publish',
-            'post__in'               => $productIds,
-            'posts_per_page'         => -1,
-            'orderby'                => 'post__in',
-            'ignore_sticky_posts'    => true,
-            'no_found_rows'          => true,
+            'post_type'           => 'product',
+            'post_status'         => 'publish',
+            'post__in'            => $productIds,
+            'posts_per_page'      => -1,
+            'orderby'             => 'post__in',
+            'ignore_sticky_posts' => true,
+            'no_found_rows'       => true,
         ]);
 
         if (!$query->have_posts()) {
@@ -76,18 +76,58 @@ final class BranchProductsShortcode
 
         ob_start();
 
-        woocommerce_product_loop_start();
+        ?>
+        <div
+            class="abm-branch-products"
+            data-branch-id="<?php echo esc_attr((string) $branch->id()); ?>"
+        >
 
-        while ($query->have_posts()) {
-            $query->the_post();
+            <div class="swiper abm-products-swiper">
 
-            wc_get_template_part(
-                'content',
-                'product'
-            );
-        }
+                <div class="swiper-wrapper">
 
-        woocommerce_product_loop_end();
+                    <?php
+                    while ($query->have_posts()) :
+                        $query->the_post();
+                        ?>
+
+                        <div class="swiper-slide">
+
+                            <ul class="products columns-1">
+
+                                <?php
+                                wc_get_template_part(
+                                    'content',
+                                    'product'
+                                );
+                                ?>
+
+                            </ul>
+
+                        </div>
+
+                    <?php endwhile; ?>
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                class="swiper-button-prev"
+                aria-label="<?php echo esc_attr__('Previous products', 'alnaseeg'); ?>"
+            ></button>
+
+            <button
+                type="button"
+                class="swiper-button-next"
+                aria-label="<?php echo esc_attr__('Next products', 'alnaseeg'); ?>"
+            ></button>
+
+            <div class="swiper-pagination"></div>
+
+        </div>
+        <?php
 
         wp_reset_postdata();
 
