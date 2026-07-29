@@ -14,6 +14,7 @@ use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
 use Alnaseeg\BranchManager\Branch\PageBranchResolver;
 use Alnaseeg\BranchManager\Product\ProductPriceResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
+use Alnaseeg\BranchManager\Product\ProductStockResolver;
 use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 
 /**
@@ -128,6 +129,18 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new ProductPriceResolver(
+                $this->branchResolver(),
+                $this->productRepository()
+            );
+    }
+
+    /**
+     * Product stock resolver.
+     */
+    public function productStockResolver(): ProductStockResolver
+    {
+        return $this->services[__METHOD__]
+            ??= new ProductStockResolver(
                 $this->branchResolver(),
                 $this->productRepository()
             );

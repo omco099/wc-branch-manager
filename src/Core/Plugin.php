@@ -76,8 +76,11 @@ final class Plugin
         $services->branchProductsShortcode()->register();
 
         /*
-         * Register branch-specific product price filters.
+         * -------------------------------------------------
+         * Branch-specific pricing
+         * -------------------------------------------------
          */
+
         $priceResolver = $services->productPriceResolver();
 
         add_filter(
@@ -135,6 +138,109 @@ final class Plugin
             static fn ($price, $product) => $priceResolver->salePrice(
                 $product->get_id(),
                 $price
+            ),
+            10,
+            2
+        );
+
+        /*
+         * -------------------------------------------------
+         * Branch-specific stock
+         * -------------------------------------------------
+         */
+
+        $stockResolver = $services->productStockResolver();
+
+        /*
+         * Stock management.
+         */
+        add_filter(
+            'woocommerce_product_get_manage_stock',
+            static fn ($manageStock, $product) => $stockResolver->manageStock(
+                $product->get_id(),
+                (bool) $manageStock
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_manage_stock',
+            static fn ($manageStock, $product) => $stockResolver->manageStock(
+                $product->get_id(),
+                (bool) $manageStock
+            ),
+            10,
+            2
+        );
+
+        /*
+         * Stock quantity.
+         */
+        add_filter(
+            'woocommerce_product_get_stock_quantity',
+            static fn ($quantity, $product) => $stockResolver->stockQuantity(
+                $product->get_id(),
+                $quantity
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_stock_quantity',
+            static fn ($quantity, $product) => $stockResolver->stockQuantity(
+                $product->get_id(),
+                $quantity
+            ),
+            10,
+            2
+        );
+
+        /*
+         * Stock status.
+         */
+        add_filter(
+            'woocommerce_product_get_stock_status',
+            static fn ($status, $product) => $stockResolver->stockStatus(
+                $product->get_id(),
+                (string) $status
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_product_variation_get_stock_status',
+            static fn ($status, $product) => $stockResolver->stockStatus(
+                $product->get_id(),
+                (string) $status
+            ),
+            10,
+            2
+        );
+
+        /*
+         * Purchasability.
+         *
+         * A product cannot be purchased when it is disabled
+         * or unavailable in the current branch.
+         */
+        add_filter(
+            'woocommerce_is_purchasable',
+            static fn ($purchasable, $product) => $stockResolver->isPurchasable(
+                $product->get_id(),
+                (bool) $purchasable
+            ),
+            10,
+            2
+        );
+
+        add_filter(
+            'woocommerce_variation_is_purchasable',
+            static fn ($purchasable, $product) => $stockResolver->isPurchasable(
+                $product->get_id(),
+                (bool) $purchasable
             ),
             10,
             2
