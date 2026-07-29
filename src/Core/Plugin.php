@@ -55,12 +55,21 @@ final class Plugin
         $services = new Services($wpdb);
 
         /*
-         * Branch Selector is intentionally disabled in Version 1.
+         * Version 1:
+         * Branch Selector is intentionally disabled.
          *
-         * The current branch is resolved from the Elementor
-         * branch page using PageBranchResolver.
+         * The current branch is resolved from the current
+         * Elementor branch page using PageBranchResolver.
          */
 
+        /*
+         * Register branch products shortcode.
+         */
+        $services->branchProductsShortcode()->register();
+
+        /*
+         * Register branch-specific product price filters.
+         */
         $priceResolver = $services->productPriceResolver();
 
         add_filter(

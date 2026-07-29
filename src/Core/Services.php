@@ -14,6 +14,7 @@ use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
 use Alnaseeg\BranchManager\Branch\PageBranchResolver;
 use Alnaseeg\BranchManager\Product\ProductPriceResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
+use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 
 /**
  * Creates and stores application services.
@@ -86,6 +87,9 @@ final class Services
 
     /**
      * Branch selector.
+     *
+     * Kept for legacy support.
+     * It is not registered in Version 1.
      */
     public function branchSelector(): BranchSelector
     {
@@ -95,6 +99,17 @@ final class Services
                 $this->branchSession(),
                 $this->branchSelectorRenderer()
             );
+    }
+
+    /**
+     * Branch selector renderer.
+     *
+     * Kept for legacy support.
+     */
+    public function branchSelectorRenderer(): BranchSelectorRenderer
+    {
+        return $this->services[__METHOD__]
+            ??= new BranchSelectorRenderer();
     }
 
     /**
@@ -113,6 +128,18 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new ProductPriceResolver(
+                $this->branchResolver(),
+                $this->productRepository()
+            );
+    }
+
+    /**
+     * Branch products shortcode.
+     */
+    public function branchProductsShortcode(): BranchProductsShortcode
+    {
+        return $this->services[__METHOD__]
+            ??= new BranchProductsShortcode(
                 $this->branchResolver(),
                 $this->productRepository()
             );
