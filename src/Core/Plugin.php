@@ -76,6 +76,11 @@ final class Plugin
         $services->branchProductsShortcode()->register();
 
         /*
+         * Register cart validation.
+         */
+        $services->cartValidator()->register();
+
+        /*
          * -------------------------------------------------
          * Branch-specific pricing
          * -------------------------------------------------
@@ -222,9 +227,6 @@ final class Plugin
 
         /*
          * Purchasability.
-         *
-         * A product cannot be purchased when it is disabled
-         * or unavailable in the current branch.
          */
         add_filter(
             'woocommerce_is_purchasable',
