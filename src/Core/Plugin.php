@@ -54,8 +54,12 @@ final class Plugin
         /** @var wpdb $wpdb */
         $services = new Services($wpdb);
 
-        // Register Branch Selector
-        $services->branchSelector()->register();
+        /*
+         * Branch Selector is intentionally disabled in Version 1.
+         *
+         * The current branch is resolved from the Elementor
+         * branch page using PageBranchResolver.
+         */
 
         $priceResolver = $services->productPriceResolver();
 
