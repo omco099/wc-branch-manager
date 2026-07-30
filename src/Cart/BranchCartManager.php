@@ -41,14 +41,22 @@ final class BranchCartManager
 
         /*
          * Run before WooCommerce validates the cart.
-         *
-         * This is especially important for Cart
-         * and Checkout requests.
          */
         add_action(
             'woocommerce_check_cart_items',
             [$this, 'synchronizeCart'],
             1
+        );
+
+        /*
+         * Remove stale WooCommerce notices generated
+         * when products from a previous branch become
+         * non-purchasable.
+         */
+        add_action(
+            'wp_loaded',
+            [$this, 'clearStaleBranchNotices'],
+            99
         );
     }
 
@@ -58,19 +66,10 @@ final class BranchCartManager
      */
     public function synchronizeCart(): void
     {
-        /*
-         * Prevent recursion / duplicate execution.
-         */
         if ($this->synchronizing) {
             return;
         }
 
-        /*
-         * Frontend only.
-         *
-         * WooCommerce AJAX requests are allowed because
-         * Checkout updates may run through AJAX.
-         */
         if (
             is_admin()
             && !wp_doing_ajax()
@@ -78,32 +77,20 @@ final class BranchCartManager
             return;
         }
 
-        /*
-         * WooCommerce must be available.
-         */
         if (!function_exists('WC')) {
             return;
         }
 
         $cart = WC()->cart;
 
-        /*
-         * Cart has not been initialized yet.
-         */
         if ($cart === null) {
             return;
         }
 
-        /*
-         * Nothing to synchronize.
-         */
         if ($cart->is_empty()) {
             return;
         }
 
-        /*
-         * Resolve the currently active branch.
-         */
         $branch = $this->branchResolver->resolve();
 
         if ($branch === null) {
@@ -131,10 +118,8 @@ final class BranchCartManager
                 }
 
                 /*
-                 * findBranch() returns NULL when:
-                 *
-                 * - Product does not belong to this branch.
-                 * - Product is disabled in this branch.
+                 * findBranch() returns NULL when the product
+                 * is disabled or unavailable in this branch.
                  */
                 $branchData = $this->productRepository->findBranch(
                     $productId,
@@ -146,10 +131,8 @@ final class BranchCartManager
                 }
 
                 /*
-                 * Remove the old branch product silently.
-                 *
-                 * No wc_add_notice() is used because
-                 * changing branch is expected behaviour.
+                 * Remove products belonging to another branch
+                 * without generating our own notice.
                  */
                 $cart->remove_cart_item(
                     $cartItemKey
@@ -159,5 +142,110 @@ final class BranchCartManager
         } finally {
             $this->synchronizing = false;
         }
+    }
+
+    /**
+     * Remove stale WooCommerce notices caused by products
+     * becoming non-purchasable after switching branches.
+     *
+     * Other WooCommerce errors and notices are preserved.
+     */
+    public function clearStaleBranchNotices(): void
+    {
+        if (
+            is_admin()
+            && !wp_doing_ajax()
+        ) {
+            return;
+        }
+
+        if (!function_exists('WC')) {
+            return;
+        }
+
+        $session = WC()->session;
+
+        if ($session === null) {
+            return;
+        }
+
+        $notices = $session->get(
+            'wc_notices',
+            []
+        );
+
+        if (!is_array($notices) || $notices === []) {
+            return;
+        }
+
+        $changed = false;
+
+        foreach ($notices as $noticeType => $typeNotices) {
+
+            if (!is_array($typeNotices)) {
+                continue;
+            }
+
+            foreach ($typeNotices as $index => $notice) {
+
+                $message = '';
+
+                if (is_array($notice)) {
+                    $message = isset($notice['notice'])
+                        ? wp_strip_all_tags((string) $notice['notice'])
+                        : '';
+                } elseif (is_string($notice)) {
+                    $message = wp_strip_all_tags($notice);
+                }
+
+                if ($message === '') {
+                    continue;
+                }
+
+                /*
+                 * WooCommerce generates this message when
+                 * cart validation finds a product that is
+                 * no longer purchasable.
+                 *
+                 * In our plugin this can happen naturally
+                 * when the customer switches branches.
+                 */
+                if (
+                    stripos(
+                        $message,
+                        'can no longer be purchased'
+                    ) === false
+                ) {
+                    continue;
+                }
+
+                unset(
+                    $notices[$noticeType][$index]
+                );
+
+                $changed = true;
+            }
+
+            if (
+                isset($notices[$noticeType])
+                && is_array($notices[$noticeType])
+            ) {
+                $notices[$noticeType] = array_values(
+                    $notices[$noticeType]
+                );
+            }
+        }
+
+        if (!$changed) {
+            return;
+        }
+
+        /*
+         * Keep all other WooCommerce notices intact.
+         */
+        $session->set(
+            'wc_notices',
+            $notices
+        );
     }
 }
