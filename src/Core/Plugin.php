@@ -81,6 +81,12 @@ final class Plugin
         $services->cartValidator()->register();
 
         /*
+         * Keep the cart synchronized with
+         * the currently active branch.
+         */
+        $services->branchCartManager()->register();
+
+        /*
          * -------------------------------------------------
          * Branch-specific pricing
          * -------------------------------------------------

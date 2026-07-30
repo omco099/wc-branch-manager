@@ -17,6 +17,7 @@ use Alnaseeg\BranchManager\Product\ProductPriceResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
 use Alnaseeg\BranchManager\Product\ProductStockResolver;
 use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
+use Alnaseeg\BranchManager\Cart\BranchCartManager;
 
 /**
  * Creates and stores application services.
@@ -154,6 +155,18 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new CartValidator(
+                $this->branchResolver(),
+                $this->productRepository()
+            );
+    }
+
+    /**
+     * Branch cart manager.
+     */
+    public function branchCartManager(): BranchCartManager
+    {
+        return $this->services[__METHOD__]
+            ??= new BranchCartManager(
                 $this->branchResolver(),
                 $this->productRepository()
             );
