@@ -87,6 +87,12 @@ final class Plugin
         $services->branchCartManager()->register();
 
         /*
+         * Filter Shop, category archives and search
+         * according to the currently active branch.
+         */
+        $services->branchCatalogFilter()->register();
+
+        /*
          * -------------------------------------------------
          * Branch-specific pricing
          * -------------------------------------------------

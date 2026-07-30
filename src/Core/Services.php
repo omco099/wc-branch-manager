@@ -18,6 +18,7 @@ use Alnaseeg\BranchManager\Product\ProductRepository;
 use Alnaseeg\BranchManager\Product\ProductStockResolver;
 use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 use Alnaseeg\BranchManager\Cart\BranchCartManager;
+use Alnaseeg\BranchManager\Catalog\BranchCatalogFilter;
 
 /**
  * Creates and stores application services.
@@ -172,6 +173,17 @@ final class Services
             );
     }
 
+    /**
+     * Branch catalog filter.
+     */
+    public function branchCatalogFilter(): BranchCatalogFilter
+    {
+        return $this->services[__METHOD__]
+            ??= new BranchCatalogFilter(
+                $this->branchResolver(),
+                $this->productRepository()
+            );
+    }
     /**
      * Branch products shortcode.
      */
