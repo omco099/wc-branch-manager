@@ -13,6 +13,12 @@ use Alnaseeg\BranchManager\Product\ProductRepository;
  */
 final class BranchCartManager
 {
+    /**
+     * Prevent duplicate synchronization
+     * during the same request.
+     */
+    private bool $synchronizing = false;
+
     public function __construct(
         private readonly BranchResolver $branchResolver,
         private readonly ProductRepository $productRepository
@@ -24,10 +30,25 @@ final class BranchCartManager
      */
     public function register(): void
     {
+        /*
+         * Normal frontend requests.
+         */
         add_action(
             'wp_loaded',
             [$this, 'synchronizeCart'],
             20
+        );
+
+        /*
+         * Run before WooCommerce validates the cart.
+         *
+         * This is especially important for Cart
+         * and Checkout requests.
+         */
+        add_action(
+            'woocommerce_check_cart_items',
+            [$this, 'synchronizeCart'],
+            1
         );
     }
 
@@ -38,10 +59,17 @@ final class BranchCartManager
     public function synchronizeCart(): void
     {
         /*
+         * Prevent recursion / duplicate execution.
+         */
+        if ($this->synchronizing) {
+            return;
+        }
+
+        /*
          * Frontend only.
          *
-         * Allow WooCommerce AJAX requests because
-         * cart operations may run through AJAX.
+         * WooCommerce AJAX requests are allowed because
+         * Checkout updates may run through AJAX.
          */
         if (
             is_admin()
@@ -57,11 +85,11 @@ final class BranchCartManager
             return;
         }
 
-        /*
-         * Cart must already be initialized.
-         */
         $cart = WC()->cart;
 
+        /*
+         * Cart has not been initialized yet.
+         */
         if ($cart === null) {
             return;
         }
@@ -74,7 +102,7 @@ final class BranchCartManager
         }
 
         /*
-         * Resolve the active branch.
+         * Resolve the currently active branch.
          */
         $branch = $this->branchResolver->resolve();
 
@@ -84,46 +112,52 @@ final class BranchCartManager
 
         $branchId = $branch->id();
 
-        /*
-         * Inspect every item currently in the cart.
-         */
-        foreach ($cart->get_cart() as $cartItemKey => $cartItem) {
+        $this->synchronizing = true;
 
-            $productId = !empty($cartItem['variation_id'])
-                ? (int) $cartItem['variation_id']
-                : (int) $cartItem['product_id'];
+        try {
 
-            if ($productId <= 0) {
-                continue;
+            foreach ($cart->get_cart() as $cartItemKey => $cartItem) {
+
+                /*
+                 * Variations use the variation ID.
+                 * Simple products use the product ID.
+                 */
+                $productId = !empty($cartItem['variation_id'])
+                    ? (int) $cartItem['variation_id']
+                    : (int) $cartItem['product_id'];
+
+                if ($productId <= 0) {
+                    continue;
+                }
+
+                /*
+                 * findBranch() returns NULL when:
+                 *
+                 * - Product does not belong to this branch.
+                 * - Product is disabled in this branch.
+                 */
+                $branchData = $this->productRepository->findBranch(
+                    $productId,
+                    $branchId
+                );
+
+                if ($branchData !== null) {
+                    continue;
+                }
+
+                /*
+                 * Remove the old branch product silently.
+                 *
+                 * No wc_add_notice() is used because
+                 * changing branch is expected behaviour.
+                 */
+                $cart->remove_cart_item(
+                    $cartItemKey
+                );
             }
 
-            /*
-             * findBranch() only returns a record when
-             * the product is enabled for this branch.
-             *
-             * NULL therefore means that the product
-             * must not remain in this branch's cart.
-             */
-            $branchData = $this->productRepository->findBranch(
-                $productId,
-                $branchId
-            );
-
-            if ($branchData !== null) {
-                continue;
-            }
-
-            /*
-             * Remove silently.
-             *
-             * We intentionally do not call wc_add_notice().
-             * The customer has changed branch, so removing
-             * products belonging to the previous branch is
-             * expected application behaviour.
-             */
-            $cart->remove_cart_item(
-                $cartItemKey
-            );
+        } finally {
+            $this->synchronizing = false;
         }
     }
 }
