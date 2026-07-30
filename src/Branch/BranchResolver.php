@@ -25,24 +25,47 @@ final class BranchResolver
      */
     public function resolve(): ?Branch
     {
+        /*
+         * Return the already resolved branch
+         * during the current request.
+         */
         if ($this->context->has()) {
             return $this->context->current();
         }
 
         /*
          * Version 1:
-         * Try resolving the branch from the current page first.
+         * Resolve the branch from the current
+         * Elementor branch page first.
          */
         $branch = $this->pageResolver->resolve();
 
         if ($branch !== null) {
+
+            /*
+             * Keep the branch available during
+             * the current request.
+             */
             $this->context->set($branch);
+
+            /*
+             * Persist the branch in WooCommerce
+             * session so subsequent requests such as
+             * Add to Cart, Cart and Checkout retain
+             * the same branch context.
+             */
+            $this->session->set(
+                $branch->id()
+            );
 
             return $branch;
         }
 
         /*
-         * Fallback to session (legacy support).
+         * The current request is not a branch page.
+         *
+         * Try restoring the previously resolved
+         * branch from WooCommerce session.
          */
         $branchId = $this->session->get();
 
@@ -50,14 +73,36 @@ final class BranchResolver
             return null;
         }
 
-        $branch = $this->branches->findById($branchId);
+        $branch = $this->branches->findById(
+            $branchId
+        );
 
+        /*
+         * Invalid or deleted branch.
+         */
         if ($branch === null) {
+
             $this->session->clear();
+            $this->context->clear();
 
             return null;
         }
 
+        /*
+         * Do not allow an inactive branch
+         * to become the current branch.
+         */
+        if (!$branch->isActive()) {
+
+            $this->session->clear();
+            $this->context->clear();
+
+            return null;
+        }
+
+        /*
+         * Restore the branch into the request context.
+         */
         $this->context->set($branch);
 
         return $branch;
