@@ -26,46 +26,47 @@ final class BranchResolver
     public function resolve(): ?Branch
     {
         /*
-         * Return the already resolved branch
-         * during the current request.
+         * Version 1:
+         *
+         * A real branch page always has the highest priority.
+         *
+         * This is important because another WooCommerce hook
+         * may have restored an old branch from the session
+         * earlier during the same request.
+         */
+        $pageBranch = $this->pageResolver->resolve();
+
+        if ($pageBranch !== null) {
+
+            /*
+             * Always make the current branch page
+             * the active request context.
+             */
+            $this->context->set($pageBranch);
+
+            /*
+             * Persist the branch so product pages,
+             * Add to Cart, Cart and Checkout retain
+             * the branch after leaving the branch page.
+             */
+            $this->session->set(
+                $pageBranch->id()
+            );
+
+            return $pageBranch;
+        }
+
+        /*
+         * If no branch page is currently being viewed,
+         * use the branch already resolved during
+         * this request.
          */
         if ($this->context->has()) {
             return $this->context->current();
         }
 
         /*
-         * Version 1:
-         * Resolve the branch from the current
-         * Elementor branch page first.
-         */
-        $branch = $this->pageResolver->resolve();
-
-        if ($branch !== null) {
-
-            /*
-             * Keep the branch available during
-             * the current request.
-             */
-            $this->context->set($branch);
-
-            /*
-             * Persist the branch in WooCommerce
-             * session so subsequent requests such as
-             * Add to Cart, Cart and Checkout retain
-             * the same branch context.
-             */
-            $this->session->set(
-                $branch->id()
-            );
-
-            return $branch;
-        }
-
-        /*
-         * The current request is not a branch page.
-         *
-         * Try restoring the previously resolved
-         * branch from WooCommerce session.
+         * Restore the branch from WooCommerce session.
          */
         $branchId = $this->session->get();
 
@@ -78,7 +79,7 @@ final class BranchResolver
         );
 
         /*
-         * Invalid or deleted branch.
+         * The stored branch no longer exists.
          */
         if ($branch === null) {
 
@@ -89,8 +90,7 @@ final class BranchResolver
         }
 
         /*
-         * Do not allow an inactive branch
-         * to become the current branch.
+         * Do not restore an inactive branch.
          */
         if (!$branch->isActive()) {
 
@@ -101,7 +101,8 @@ final class BranchResolver
         }
 
         /*
-         * Restore the branch into the request context.
+         * Restore the branch into the current
+         * request context.
          */
         $this->context->set($branch);
 
