@@ -9,8 +9,8 @@ use Alnaseeg\BranchManager\Product\ProductRepository;
 use WP_Query;
 
 /**
- * Filters the WooCommerce catalog according
- * to the currently active branch.
+ * Filters WooCommerce catalog queries
+ * according to the currently active branch.
  */
 final class BranchCatalogFilter
 {
@@ -21,24 +21,16 @@ final class BranchCatalogFilter
     }
 
     /**
-     * Register catalog filtering hooks.
+     * Register hooks.
      */
     public function register(): void
     {
-        /*
-         * Filter the main WordPress / WooCommerce
-         * catalog query before it is executed.
-         */
         add_action(
             'pre_get_posts',
             [$this, 'filterMainQuery'],
             20
         );
 
-        /*
-         * Keep WooCommerce's dedicated product query
-         * covered as a secondary layer.
-         */
         add_action(
             'woocommerce_product_query',
             [$this, 'filterProductQuery'],
@@ -47,13 +39,7 @@ final class BranchCatalogFilter
     }
 
     /**
-     * Filter the main frontend catalog query.
-     *
-     * Covers:
-     * - Shop
-     * - Product categories
-     * - Product tags
-     * - Product search
+     * Filter frontend queries.
      */
     public function filterMainQuery(WP_Query $query): void
     {
@@ -65,31 +51,51 @@ final class BranchCatalogFilter
             return;
         }
 
-        if (current_user_can('manage_options') && $query->is_search()) {
-
-    echo '<pre>';
-
-    var_dump(
-        $query->get('post_type'),
-        $query->is_search(),
-        $query->is_main_query(),
-        get_query_var('post_type')
-    );
-
-    echo '</pre>';
-}
-
-        if (!$this->isCatalogQuery($query)) {
+        /*
+         * Shop archive.
+         */
+        if ($query->is_post_type_archive('product')) {
+            $this->applyBranchProducts($query);
             return;
         }
 
-        $this->applyBranchProducts(
-            $query
-        );
+        /*
+         * Product category.
+         */
+        if ($query->is_tax('product_cat')) {
+            $this->applyBranchProducts($query);
+            return;
+        }
+
+        /*
+         * Product tag.
+         */
+        if ($query->is_tax('product_tag')) {
+            $this->applyBranchProducts($query);
+            return;
+        }
+
+        /*
+         * WooCommerce search.
+         */
+        $postType = $query->get('post_type');
+
+        if (
+            $query->is_search()
+            && (
+                $postType === 'product'
+                || (
+                    is_array($postType)
+                    && in_array('product', $postType, true)
+                )
+            )
+        ) {
+            $this->applyBranchProducts($query);
+        }
     }
 
     /**
-     * Filter WooCommerce product queries.
+     * WooCommerce product query.
      */
     public function filterProductQuery(WP_Query $query): void
     {
@@ -97,139 +103,56 @@ final class BranchCatalogFilter
             return;
         }
 
-        $this->applyBranchProducts(
-            $query
-        );
+        $this->applyBranchProducts($query);
     }
 
     /**
-     * Determine whether the query belongs
-     * to the WooCommerce catalog.
-     */
-    private function isCatalogQuery(WP_Query $query): bool
-    {
-        /*
-         * Shop archive.
-         */
-        if ($query->is_post_type_archive('product')) {
-            return true;
-        }
-
-        /*
-         * Product category archive.
-         */
-        if ($query->is_tax('product_cat')) {
-            return true;
-        }
-
-        /*
-         * Product tag archive.
-         */
-        if ($query->is_tax('product_tag')) {
-            return true;
-        }
-
-        /*
-         * Product search.
-         */
-        if ($query->is_search()) {
-
-            $postType = $query->get('post_type');
-
-            if ($postType === 'product') {
-                return true;
-            }
-
-            if (
-                is_array($postType)
-                && in_array(
-                    'product',
-                    $postType,
-                    true
-                )
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Restrict a product query to products
-     * enabled in the currently active branch.
+     * Restrict query to current branch products.
      */
     private function applyBranchProducts(WP_Query $query): void
     {
         $branch = $this->branchResolver->resolve();
 
-        /*
-         * No active branch:
-         * do not modify WooCommerce yet.
-         */
         if ($branch === null) {
             return;
         }
 
-        $branchProductIds = $this->productRepository->findProductsByBranch(
+        $productIds = $this->productRepository->findProductsByBranch(
             $branch->id()
         );
 
-        /*
-         * WP_Query treats an empty post__in array
-         * as "no restriction".
-         *
-         * [0] guarantees no products are returned.
-         */
-        if ($branchProductIds === []) {
-            $branchProductIds = [0];
+        if ($productIds === []) {
+            $productIds = [0];
         }
 
-        $branchProductIds = array_values(
+        $productIds = array_values(
             array_unique(
-                array_map(
-                    'intval',
-                    $branchProductIds
-                )
+                array_map('intval', $productIds)
             )
         );
 
-        /*
-         * Respect restrictions already applied by
-         * WooCommerce, the theme or another plugin.
-         */
-        $existingProductIds = $query->get(
-            'post__in'
-        );
+        $existing = $query->get('post__in');
 
         if (
-            is_array($existingProductIds)
-            && $existingProductIds !== []
+            is_array($existing)
+            && $existing !== []
         ) {
 
-            $existingProductIds = array_map(
-                'intval',
-                $existingProductIds
-            );
-
-            $branchProductIds = array_values(
+            $productIds = array_values(
                 array_intersect(
-                    $existingProductIds,
-                    $branchProductIds
+                    array_map('intval', $existing),
+                    $productIds
                 )
             );
 
-            /*
-             * The intersection may contain nothing.
-             */
-            if ($branchProductIds === []) {
-                $branchProductIds = [0];
+            if ($productIds === []) {
+                $productIds = [0];
             }
         }
 
         $query->set(
             'post__in',
-            $branchProductIds
+            $productIds
         );
     }
 }

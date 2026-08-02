@@ -9,6 +9,7 @@ use Alnaseeg\BranchManager\Admin\Menu;
 use Alnaseeg\BranchManager\Product\ProductDataPanel;
 use Alnaseeg\BranchManager\Product\ProductDataTab;
 use Alnaseeg\BranchManager\Product\ProductSaver;
+use Alnaseeg\BranchManager\Checkout\OrderMetaManager;
 
 /**
  * Main plugin application.
@@ -92,6 +93,11 @@ final class Plugin
          */
         $services->branchCatalogFilter()->register();
 
+        /*
+        * Save branch information into the order.
+        */
+        $services->orderMetaManager()->register();
+        
         /*
          * -------------------------------------------------
          * Branch-specific pricing

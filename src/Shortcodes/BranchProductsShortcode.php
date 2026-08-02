@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Shortcodes;
 
-use Alnaseeg\BranchManager\Branch\BranchResolver;
-use Alnaseeg\BranchManager\Product\ProductRepository;
+use Alnaseeg\BranchManager\Catalog\BranchCatalogService;
 use WP_Query;
 
 /**
@@ -17,8 +16,7 @@ final class BranchProductsShortcode
      * Create a new shortcode instance.
      */
     public function __construct(
-        private readonly BranchResolver $branchResolver,
-        private readonly ProductRepository $productRepository
+        private readonly BranchCatalogService $catalog
     ) {
     }
 
@@ -42,21 +40,18 @@ final class BranchProductsShortcode
         array $attributes = [],
         ?string $content = null
     ): string {
+
         if (!function_exists('WC')) {
             return '';
         }
 
-        $branch = $this->branchResolver->resolve();
-
-        if ($branch === null) {
+        if (!$this->catalog->hasBranch()) {
             return '';
         }
 
-        $productIds = $this->productRepository->findProductsByBranch(
-            $branch->id()
-        );
+        $productIds = $this->catalog->queryProductIds();
 
-        if ($productIds === []) {
+        if ($productIds === [0]) {
             return '';
         }
 
@@ -75,32 +70,27 @@ final class BranchProductsShortcode
         }
 
         ob_start();
-
         ?>
+
         <div
             class="abm-branch-products"
-            data-branch-id="<?php echo esc_attr((string) $branch->id()); ?>"
+            data-branch-id="<?php echo esc_attr((string) $this->catalog->branchId()); ?>"
         >
 
             <div class="swiper abm-products-swiper">
 
                 <div class="swiper-wrapper">
 
-                    <?php
-                    while ($query->have_posts()) :
-                        $query->the_post();
-                        ?>
+                    <?php while ($query->have_posts()) : $query->the_post(); ?>
 
                         <div class="swiper-slide">
 
                             <ul class="products columns-1">
 
-                                <?php
-                                wc_get_template_part(
+                                <?php wc_get_template_part(
                                     'content',
                                     'product'
-                                );
-                                ?>
+                                ); ?>
 
                             </ul>
 
@@ -127,6 +117,7 @@ final class BranchProductsShortcode
             <div class="swiper-pagination"></div>
 
         </div>
+
         <?php
 
         wp_reset_postdata();

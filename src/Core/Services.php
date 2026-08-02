@@ -19,6 +19,8 @@ use Alnaseeg\BranchManager\Product\ProductStockResolver;
 use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 use Alnaseeg\BranchManager\Cart\BranchCartManager;
 use Alnaseeg\BranchManager\Catalog\BranchCatalogFilter;
+use Alnaseeg\BranchManager\Catalog\BranchCatalogService;
+use Alnaseeg\BranchManager\Checkout\OrderMetaManager;
 
 /**
  * Creates and stores application services.
@@ -126,6 +128,18 @@ final class Services
     }
 
     /**
+     * Branch catalog service.
+     */
+    public function branchCatalogService(): BranchCatalogService
+    {
+        return $this->services[__METHOD__]
+           ??= new BranchCatalogService(
+              $this->branchResolver(),
+              $this->productRepository()
+        );
+    }
+
+    /**
      * Product price resolver.
      */
     public function productPriceResolver(): ProductPriceResolver
@@ -173,17 +187,17 @@ final class Services
             );
     }
 
-    /**
-     * Branch catalog filter.
-     */
+   /**
+    * Branch catalog filter.
+    */
     public function branchCatalogFilter(): BranchCatalogFilter
     {
         return $this->services[__METHOD__]
             ??= new BranchCatalogFilter(
-                $this->branchResolver(),
-                $this->productRepository()
-            );
+                $this->branchCatalogService()
+        );
     }
+
     /**
      * Branch products shortcode.
      */
@@ -191,8 +205,18 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new BranchProductsShortcode(
-                $this->branchResolver(),
-                $this->productRepository()
-            );
+                  $this->branchCatalogService()
+        );
     }
+
+    /**
+    * Order meta manager.
+    */
+    public function orderMetaManager(): OrderMetaManager
+    {
+        return $this->services[__METHOD__]
+            ??= new OrderMetaManager(
+                 $this->branchResolver()
+        );
+}
 }
