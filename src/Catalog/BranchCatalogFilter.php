@@ -65,6 +65,20 @@ final class BranchCatalogFilter
             return;
         }
 
+        if (current_user_can('manage_options') && $query->is_search()) {
+
+    echo '<pre>';
+
+    var_dump(
+        $query->get('post_type'),
+        $query->is_search(),
+        $query->is_main_query(),
+        get_query_var('post_type')
+    );
+
+    echo '</pre>';
+}
+
         if (!$this->isCatalogQuery($query)) {
             return;
         }
