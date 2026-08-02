@@ -186,7 +186,17 @@ final class Services
                 $this->productRepository()
             );
     }
-
+    /**
+    * Branch CatalogService
+    */
+    public function branchCatalogService(): BranchCatalogService
+    {
+        return $this->services[__METHOD__]
+           ??= new BranchCatalogService(
+               $this->branchResolver(),
+               $this->productRepository()
+    );
+    }
    /**
     * Branch catalog filter.
     */
