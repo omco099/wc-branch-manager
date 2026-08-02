@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Catalog;
 
-use Alnaseeg\BranchManager\Branch\BranchResolver;
-use Alnaseeg\BranchManager\Product\ProductRepository;
 use WP_Query;
 
 /**
  * Filters WooCommerce catalog queries
- * according to the currently active branch.
+ * according to the current branch.
  */
 final class BranchCatalogFilter
 {
     public function __construct(
-        private readonly BranchResolver $branchResolver,
-        private readonly ProductRepository $productRepository
+        private readonly BranchCatalogService $catalog
     ) {
     }
 
@@ -33,16 +30,18 @@ final class BranchCatalogFilter
 
         add_action(
             'woocommerce_product_query',
-            [$this, 'filterProductQuery'],
+            [$this, 'filterWooCommerceQuery'],
             20
         );
     }
 
     /**
-     * Filter frontend queries.
+     * Filter the main frontend query.
      */
-    public function filterMainQuery(WP_Query $query): void
-    {
+    public function filterMainQuery(
+        WP_Query $query
+    ): void {
+
         if (is_admin()) {
             return;
         }
@@ -51,96 +50,89 @@ final class BranchCatalogFilter
             return;
         }
 
-        /*
-         * Shop archive.
-         */
-        if ($query->is_post_type_archive('product')) {
-            $this->applyBranchProducts($query);
+        if (!$this->isCatalogQuery($query)) {
             return;
         }
 
-        /*
-         * Product category.
-         */
-        if ($query->is_tax('product_cat')) {
-            $this->applyBranchProducts($query);
-            return;
-        }
-
-        /*
-         * Product tag.
-         */
-        if ($query->is_tax('product_tag')) {
-            $this->applyBranchProducts($query);
-            return;
-        }
-
-        /*
-         * WooCommerce search.
-         */
-        $postType = $query->get('post_type');
-
-        if (
-            $query->is_search()
-            && (
-                $postType === 'product'
-                || (
-                    is_array($postType)
-                    && in_array('product', $postType, true)
-                )
-            )
-        ) {
-            $this->applyBranchProducts($query);
-        }
+        $this->applyFilter($query);
     }
 
     /**
-     * WooCommerce product query.
+     * Filter WooCommerce product queries.
      */
-    public function filterProductQuery(WP_Query $query): void
-    {
+    public function filterWooCommerceQuery(
+        WP_Query $query
+    ): void {
+
         if (is_admin()) {
             return;
         }
 
-        $this->applyBranchProducts($query);
+        $this->applyFilter($query);
     }
 
     /**
-     * Restrict query to current branch products.
+     * Determine whether this query belongs
+     * to the WooCommerce catalog.
      */
-    private function applyBranchProducts(WP_Query $query): void
-    {
-        $branch = $this->branchResolver->resolve();
+    private function isCatalogQuery(
+        WP_Query $query
+    ): bool {
 
-        if ($branch === null) {
+        if ($query->is_post_type_archive('product')) {
+            return true;
+        }
+
+        if ($query->is_tax('product_cat')) {
+            return true;
+        }
+
+        if ($query->is_tax('product_tag')) {
+            return true;
+        }
+
+        if ($query->is_search()) {
+
+            $postType = $query->get('post_type');
+
+            if ($postType === 'product') {
+                return true;
+            }
+
+            if (
+                is_array($postType)
+                && in_array('product', $postType, true)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Apply branch product restriction.
+     */
+    private function applyFilter(
+        WP_Query $query
+    ): void {
+
+        if (!$this->catalog->hasBranch()) {
             return;
         }
 
-        $productIds = $this->productRepository->findProductsByBranch(
-            $branch->id()
-        );
+        $productIds = $this->catalog->queryProductIds();
 
-        if ($productIds === []) {
-            $productIds = [0];
-        }
-
-        $productIds = array_values(
-            array_unique(
-                array_map('intval', $productIds)
-            )
-        );
-
-        $existing = $query->get('post__in');
+        $existingIds = $query->get('post__in');
 
         if (
-            is_array($existing)
-            && $existing !== []
+            is_array($existingIds)
+            && $existingIds !== []
         ) {
 
             $productIds = array_values(
                 array_intersect(
-                    array_map('intval', $existing),
+                    array_map('intval', $existingIds),
                     $productIds
                 )
             );
