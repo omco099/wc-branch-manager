@@ -27,6 +27,24 @@ final class BranchCatalogService
     }
 
     /**
+     * Return the current branch id.
+     */
+    public function branchId(): ?int
+    {
+        $branch = $this->branchResolver->current();
+
+        return $branch?->id();
+    }
+
+    /**
+     * Return the current branch.
+     */
+    public function branch()
+    {
+        return $this->branchResolver->current();
+    }
+
+    /**
      * Return all visible product IDs
      * for the current branch.
      *
