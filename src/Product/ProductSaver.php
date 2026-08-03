@@ -90,76 +90,19 @@ final class ProductSaver
     {
         $branches = [];
 
+        $sanitizer = new BranchDataSanitizer();
+
         foreach ($_POST['wcbm_branch'] as $branchId => $branch) {
 
             if (! is_array($branch)) {
                 continue;
             }
 
-            $branchId = (int) $branchId;
-
-            $manageStock = ! empty($branch['manage_stock']);
-
-            $stockQuantity = isset($branch['stock_quantity'])
-                ? max(
-                    0,
-                    (int) wp_unslash((string) $branch['stock_quantity'])
-                )
-                : 0;
-
-            $branches[$branchId] = [
-                'regular_price' => $this->sanitizePrice(
-                    $branch['regular_price'] ?? ''
-                ),
-                'sale_price' => $this->sanitizePrice(
-                    $branch['sale_price'] ?? ''
-                ),
-                'stock_quantity' => $stockQuantity,
-                'manage_stock' => $manageStock ? 1 : 0,
-                'stock_status' => $this->determineStockStatus(
-                    $manageStock,
-                    $stockQuantity
-                ),
-                'is_enabled' => ! empty($branch['is_enabled']) ? 1 : 0,
-            ];
+            $branches[(int) $branchId] = $sanitizer->sanitize(
+                $branch
+            );
         }
 
         return $branches;
-    }
-
-    /**
-     * Sanitize price value.
-     */
-    private function sanitizePrice(
-        mixed $value
-    ): float|string {
-
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            return '';
-        }
-
-        return (float) wc_format_decimal(
-            wp_unslash((string) $value)
-        );
-    }
-
-    /**
-     * Determine stock status.
-     */
-    private function determineStockStatus(
-        bool $manageStock,
-        int $stockQuantity
-    ): string {
-
-        if (! $manageStock) {
-            return 'instock';
-        }
-
-        return $stockQuantity > 0
-            ? 'instock'
-            : 'outofstock';
     }
 }

@@ -42,46 +42,6 @@ final class ProductFields
 
                         <label>
                             <?php esc_html_e(
-                                'Regular Price',
-                                'alnaseeg-branch-manager'
-                            ); ?>
-                        </label>
-
-                        <input
-                            type="number"
-                            class="short"
-                            step="0.01"
-                            min="0"
-                            name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][regular_price]"
-                            value="<?php echo esc_attr((string) ($values['regular_price'] ?? '')); ?>"
-                        >
-
-                    </p>
-
-                    <p class="form-field">
-
-                        <label>
-                            <?php esc_html_e(
-                                'Sale Price',
-                                'alnaseeg-branch-manager'
-                            ); ?>
-                        </label>
-
-                        <input
-                            type="number"
-                            class="short"
-                            step="0.01"
-                            min="0"
-                            name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][sale_price]"
-                            value="<?php echo esc_attr((string) ($values['sale_price'] ?? '')); ?>"
-                        >
-
-                    </p>
-
-                    <p class="form-field">
-
-                        <label>
-                            <?php esc_html_e(
                                 'Manage Stock',
                                 'alnaseeg-branch-manager'
                             ); ?>
@@ -91,7 +51,7 @@ final class ProductFields
                             type="checkbox"
                             value="1"
                             name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][manage_stock]"
-                            <?php checked(!empty($values['manage_stock'])); ?>
+                            <?php checked(! empty($values['manage_stock'])); ?>
                         >
 
                     </p>
@@ -128,7 +88,7 @@ final class ProductFields
                             type="checkbox"
                             value="1"
                             name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][is_enabled]"
-                            <?php checked(!empty($values['is_enabled'])); ?>
+                            <?php checked(! empty($values['is_enabled'])); ?>
                         >
 
                     </p>

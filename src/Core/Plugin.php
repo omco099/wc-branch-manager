@@ -9,7 +9,8 @@ use Alnaseeg\BranchManager\Admin\Menu;
 use Alnaseeg\BranchManager\Product\ProductDataPanel;
 use Alnaseeg\BranchManager\Product\ProductDataTab;
 use Alnaseeg\BranchManager\Product\ProductSaver;
-use Alnaseeg\BranchManager\Checkout\OrderMetaManager;
+use Alnaseeg\BranchManager\Product\VariationDataPanel;
+use Alnaseeg\BranchManager\Product\VariationSaver;
 
 /**
  * Main plugin application.
@@ -30,11 +31,15 @@ final class Plugin
      */
     private function registerModules(): void
     {
-        (new ProductDataTab())->register();
+       (new ProductDataTab())->register();
 
-        (new ProductDataPanel())->register();
+       (new ProductDataPanel())->register();
 
-        (new ProductSaver())->register();
+       (new VariationDataPanel())->register();
+
+       (new ProductSaver())->register();
+
+       (new VariationSaver())->register();
     }
 
     /**
