@@ -7,7 +7,7 @@ namespace Alnaseeg\BranchManager\Catalog;
 use WP_Query;
 
 /**
- * Filters WooCommerce catalog queries
+ * Filters WooCommerce catalog pages
  * according to the current branch.
  */
 final class BranchCatalogFilter
@@ -27,30 +27,40 @@ final class BranchCatalogFilter
             [$this, 'filterMainQuery'],
             20
         );
-
-        add_action(
-            'woocommerce_product_query',
-            [$this, 'filterWooCommerceQuery'],
-            20
-        );
     }
 
     /**
-     * Filter the main frontend query.
+     * Filter the main frontend catalog query.
      */
     public function filterMainQuery(
         WP_Query $query
     ): void {
 
+        /*
+         * Never modify admin queries.
+         */
         if (is_admin()) {
             return;
         }
 
-        if (!$query->is_main_query()) {
+        /*
+         * Only the main frontend query.
+         */
+        if (! $query->is_main_query()) {
             return;
         }
 
-        if (!$this->isCatalogQuery($query)) {
+        /*
+         * Ignore single product pages.
+         */
+        if (is_product()) {
+            return;
+        }
+
+        /*
+         * Only WooCommerce catalog pages.
+         */
+        if (! $this->isCatalogQuery($query)) {
             return;
         }
 
@@ -58,72 +68,60 @@ final class BranchCatalogFilter
     }
 
     /**
-     * Filter WooCommerce product queries.
-     */
-    public function filterWooCommerceQuery(
-        WP_Query $query
-    ): void {
-
-        if (is_admin()) {
-            return;
-        }
-
-        $this->applyFilter($query);
-    }
-
-    /**
-     * Determine whether this query belongs
-     * to the WooCommerce catalog.
+     * Determine whether the current query
+     * belongs to the WooCommerce catalog.
      */
     private function isCatalogQuery(
         WP_Query $query
     ): bool {
 
-        if ($query->is_post_type_archive('product')) {
+        if (
+            $query->is_post_type_archive('product')
+        ) {
             return true;
         }
 
-        if ($query->is_tax('product_cat')) {
+        if (
+            $query->is_tax([
+                'product_cat',
+                'product_tag',
+            ])
+        ) {
             return true;
         }
 
-        if ($query->is_tax('product_tag')) {
-            return true;
+        if (! $query->is_search()) {
+            return false;
         }
 
-        if ($query->is_search()) {
+        $postType = $query->get('post_type');
 
-            $postType = $query->get('post_type');
-
-            if ($postType === 'product') {
-                return true;
-            }
-
-            if (
+        return $postType === 'product'
+            || (
                 is_array($postType)
-                && in_array('product', $postType, true)
-            ) {
-                return true;
-            }
-        }
-
-        return false;
+                && in_array(
+                    'product',
+                    $postType,
+                    true
+                )
+            );
     }
 
     /**
-     * Apply branch product restriction.
+     * Restrict catalog products
+     * to the current branch.
      */
     private function applyFilter(
         WP_Query $query
     ): void {
 
-        if (!$this->catalog->hasBranch()) {
+        if (! $this->catalog->hasBranch()) {
             return;
         }
 
-        $existingIds = $query->get('post__in');
-        
         $productIds = $this->catalog->queryProductIds();
+
+        $existingIds = $query->get('post__in');
 
         if (
             is_array($existingIds)
@@ -132,7 +130,10 @@ final class BranchCatalogFilter
 
             $productIds = array_values(
                 array_intersect(
-                    array_map('intval', $existingIds),
+                    array_map(
+                        'intval',
+                        $existingIds
+                    ),
                     $productIds
                 )
             );
