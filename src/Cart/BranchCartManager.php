@@ -72,22 +72,18 @@ final class BranchCartManager
 
         if (
             is_admin()
-            && !wp_doing_ajax()
+            && ! wp_doing_ajax()
         ) {
             return;
         }
 
-        if (!function_exists('WC')) {
+        if (! function_exists('WC')) {
             return;
         }
 
         $cart = WC()->cart;
 
-        if ($cart === null) {
-            return;
-        }
-
-        if ($cart->is_empty()) {
+        if ($cart === null || $cart->is_empty()) {
             return;
         }
 
@@ -97,8 +93,6 @@ final class BranchCartManager
             return;
         }
 
-        $branchId = $branch->id();
-
         $this->synchronizing = true;
 
         try {
@@ -106,40 +100,34 @@ final class BranchCartManager
             foreach ($cart->get_cart() as $cartItemKey => $cartItem) {
 
                 /*
-                 * Variations use the variation ID.
-                 * Simple products use the product ID.
+                 * Branch availability is stored
+                 * on the parent product.
                  */
-                $productId = !empty($cartItem['variation_id'])
-                    ? (int) $cartItem['variation_id']
-                    : (int) $cartItem['product_id'];
+                $productId = (int) $cartItem['product_id'];
 
                 if ($productId <= 0) {
                     continue;
                 }
 
-                /*
-                 * findBranch() returns NULL when the product
-                 * is disabled or unavailable in this branch.
-                 */
                 $branchData = $this->productRepository->findBranch(
                     $productId,
-                    $branchId
+                    $branch->id()
                 );
 
-                if ($branchData !== null) {
+                if (
+                    $branchData !== null
+                    && ! empty($branchData['is_enabled'])
+                ) {
                     continue;
                 }
 
-                /*
-                 * Remove products belonging to another branch
-                 * without generating our own notice.
-                 */
                 $cart->remove_cart_item(
                     $cartItemKey
                 );
             }
 
         } finally {
+
             $this->synchronizing = false;
         }
     }
@@ -154,12 +142,12 @@ final class BranchCartManager
     {
         if (
             is_admin()
-            && !wp_doing_ajax()
+            && ! wp_doing_ajax()
         ) {
             return;
         }
 
-        if (!function_exists('WC')) {
+        if (! function_exists('WC')) {
             return;
         }
 
@@ -174,7 +162,7 @@ final class BranchCartManager
             []
         );
 
-        if (!is_array($notices) || $notices === []) {
+        if (! is_array($notices) || $notices === []) {
             return;
         }
 
@@ -182,7 +170,7 @@ final class BranchCartManager
 
         foreach ($notices as $noticeType => $typeNotices) {
 
-            if (!is_array($typeNotices)) {
+            if (! is_array($typeNotices)) {
                 continue;
             }
 
@@ -202,14 +190,6 @@ final class BranchCartManager
                     continue;
                 }
 
-                /*
-                 * WooCommerce generates this message when
-                 * cart validation finds a product that is
-                 * no longer purchasable.
-                 *
-                 * In our plugin this can happen naturally
-                 * when the customer switches branches.
-                 */
                 if (
                     stripos(
                         $message,
@@ -236,13 +216,10 @@ final class BranchCartManager
             }
         }
 
-        if (!$changed) {
+        if (! $changed) {
             return;
         }
 
-        /*
-         * Keep all other WooCommerce notices intact.
-         */
         $session->set(
             'wc_notices',
             $notices

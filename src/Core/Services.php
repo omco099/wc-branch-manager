@@ -9,18 +9,16 @@ use Alnaseeg\BranchManager\Branch\BranchContext;
 use Alnaseeg\BranchManager\Branch\BranchRepository;
 use Alnaseeg\BranchManager\Branch\BranchResolver;
 use Alnaseeg\BranchManager\Branch\BranchSelector;
-use Alnaseeg\BranchManager\Branch\BranchSession;
 use Alnaseeg\BranchManager\Branch\BranchSelectorRenderer;
+use Alnaseeg\BranchManager\Branch\BranchSession;
 use Alnaseeg\BranchManager\Branch\PageBranchResolver;
-use Alnaseeg\BranchManager\Cart\CartValidator;
-use Alnaseeg\BranchManager\Product\ProductPriceResolver;
-use Alnaseeg\BranchManager\Product\ProductRepository;
-use Alnaseeg\BranchManager\Product\ProductStockResolver;
-use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 use Alnaseeg\BranchManager\Cart\BranchCartManager;
+use Alnaseeg\BranchManager\Cart\CartValidator;
 use Alnaseeg\BranchManager\Catalog\BranchCatalogFilter;
 use Alnaseeg\BranchManager\Catalog\BranchCatalogService;
 use Alnaseeg\BranchManager\Checkout\OrderMetaManager;
+use Alnaseeg\BranchManager\Product\ProductRepository;
+use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 
 /**
  * Creates and stores application services.
@@ -133,31 +131,7 @@ final class Services
     public function branchCatalogService(): BranchCatalogService
     {
         return $this->services[__METHOD__]
-           ??= new BranchCatalogService(
-              $this->branchResolver(),
-              $this->productRepository()
-        );
-    }
-
-    /**
-     * Product price resolver.
-     */
-    public function productPriceResolver(): ProductPriceResolver
-    {
-        return $this->services[__METHOD__]
-            ??= new ProductPriceResolver(
-                $this->branchResolver(),
-                $this->productRepository()
-            );
-    }
-
-    /**
-     * Product stock resolver.
-     */
-    public function productStockResolver(): ProductStockResolver
-    {
-        return $this->services[__METHOD__]
-            ??= new ProductStockResolver(
+            ??= new BranchCatalogService(
                 $this->branchResolver(),
                 $this->productRepository()
             );
@@ -186,16 +160,16 @@ final class Services
                 $this->productRepository()
             );
     }
-   
-   /**
-    * Branch catalog filter.
-    */
+
+    /**
+     * Branch catalog filter.
+     */
     public function branchCatalogFilter(): BranchCatalogFilter
     {
         return $this->services[__METHOD__]
             ??= new BranchCatalogFilter(
                 $this->branchCatalogService()
-        );
+            );
     }
 
     /**
@@ -205,18 +179,18 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new BranchProductsShortcode(
-                  $this->branchCatalogService()
-        );
+                $this->branchCatalogService()
+            );
     }
 
     /**
-    * Order meta manager.
-    */
+     * Order meta manager.
+     */
     public function orderMetaManager(): OrderMetaManager
     {
         return $this->services[__METHOD__]
             ??= new OrderMetaManager(
-                 $this->branchResolver()
-        );
-}
+                $this->branchResolver()
+            );
+    }
 }

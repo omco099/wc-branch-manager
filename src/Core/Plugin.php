@@ -9,8 +9,6 @@ use Alnaseeg\BranchManager\Admin\Menu;
 use Alnaseeg\BranchManager\Product\ProductDataPanel;
 use Alnaseeg\BranchManager\Product\ProductDataTab;
 use Alnaseeg\BranchManager\Product\ProductSaver;
-use Alnaseeg\BranchManager\Product\VariationDataPanel;
-use Alnaseeg\BranchManager\Product\VariationSaver;
 
 /**
  * Main plugin application.
@@ -31,15 +29,11 @@ final class Plugin
      */
     private function registerModules(): void
     {
-       (new ProductDataTab())->register();
+        (new ProductDataTab())->register();
 
-       (new ProductDataPanel())->register();
+        (new ProductDataPanel())->register();
 
-       (new VariationDataPanel())->register();
-
-       (new ProductSaver())->register();
-
-       (new VariationSaver())->register();
+        (new ProductSaver())->register();
     }
 
     /**
@@ -99,177 +93,9 @@ final class Plugin
         $services->branchCatalogFilter()->register();
 
         /*
-        * Save branch information into the order.
-        */
+         * Save branch information into the order.
+         */
         $services->orderMetaManager()->register();
-        
-        /*
-         * -------------------------------------------------
-         * Branch-specific pricing
-         * -------------------------------------------------
-         */
-
-        $priceResolver = $services->productPriceResolver();
-
-        add_filter(
-            'woocommerce_product_get_price',
-            static fn ($price, $product) => $priceResolver->price(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_get_regular_price',
-            static fn ($price, $product) => $priceResolver->regularPrice(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_get_sale_price',
-            static fn ($price, $product) => $priceResolver->salePrice(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_price',
-            static fn ($price, $product) => $priceResolver->price(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_regular_price',
-            static fn ($price, $product) => $priceResolver->regularPrice(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_sale_price',
-            static fn ($price, $product) => $priceResolver->salePrice(
-                $product->get_id(),
-                $price
-            ),
-            10,
-            2
-        );
-
-        /*
-         * -------------------------------------------------
-         * Branch-specific stock
-         * -------------------------------------------------
-         */
-
-        $stockResolver = $services->productStockResolver();
-
-        /*
-         * Stock management.
-         */
-        add_filter(
-            'woocommerce_product_get_manage_stock',
-            static fn ($manageStock, $product) => $stockResolver->manageStock(
-                $product->get_id(),
-                (bool) $manageStock
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_manage_stock',
-            static fn ($manageStock, $product) => $stockResolver->manageStock(
-                $product->get_id(),
-                (bool) $manageStock
-            ),
-            10,
-            2
-        );
-
-        /*
-         * Stock quantity.
-         */
-        add_filter(
-            'woocommerce_product_get_stock_quantity',
-            static fn ($quantity, $product) => $stockResolver->stockQuantity(
-                $product->get_id(),
-                $quantity
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_stock_quantity',
-            static fn ($quantity, $product) => $stockResolver->stockQuantity(
-                $product->get_id(),
-                $quantity
-            ),
-            10,
-            2
-        );
-
-        /*
-         * Stock status.
-         */
-        add_filter(
-            'woocommerce_product_get_stock_status',
-            static fn ($status, $product) => $stockResolver->stockStatus(
-                $product->get_id(),
-                (string) $status
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_product_variation_get_stock_status',
-            static fn ($status, $product) => $stockResolver->stockStatus(
-                $product->get_id(),
-                (string) $status
-            ),
-            10,
-            2
-        );
-
-        /*
-         * Purchasability.
-         */
-        add_filter(
-            'woocommerce_is_purchasable',
-            static fn ($purchasable, $product) => $stockResolver->isPurchasable(
-                $product->get_id(),
-                (bool) $purchasable
-            ),
-            10,
-            2
-        );
-
-        add_filter(
-            'woocommerce_variation_is_purchasable',
-            static fn ($purchasable, $product) => $stockResolver->isPurchasable(
-                $product->get_id(),
-                (bool) $purchasable
-            ),
-            10,
-            2
-        );
     }
 
     /**

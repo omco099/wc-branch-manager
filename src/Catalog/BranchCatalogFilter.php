@@ -121,9 +121,9 @@ final class BranchCatalogFilter
             return;
         }
 
-        $productIds = $this->catalog->queryProductIds();
-
         $existingIds = $query->get('post__in');
+        
+        $productIds = $this->catalog->queryProductIds();
 
         if (
             is_array($existingIds)

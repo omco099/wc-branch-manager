@@ -25,7 +25,7 @@ final class ProductRepository
     /**
      * Get all branch data for a product.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int,array<string,mixed>>
      */
     public function findByProduct(int $productId): array
     {
@@ -34,11 +34,6 @@ final class ProductRepository
                 "
                 SELECT
                     branch_id,
-                    regular_price,
-                    sale_price,
-                    stock_quantity,
-                    manage_stock,
-                    stock_status,
                     is_enabled
                 FROM {$this->table}
                 WHERE product_id = %d
@@ -55,13 +50,9 @@ final class ProductRepository
         $branches = [];
 
         foreach ($rows as $row) {
+
             $branches[(int) $row['branch_id']] = [
-                'regular_price'  => (float) $row['regular_price'],
-                'sale_price'     => $this->normalizeSalePrice($row['sale_price'] ?? null),
-                'stock_quantity' => (int) $row['stock_quantity'],
-                'manage_stock'   => (bool) $row['manage_stock'],
-                'stock_status'   => (string) $row['stock_status'],
-                'is_enabled'     => (bool) $row['is_enabled'],
+                'is_enabled' => (bool) $row['is_enabled'],
             ];
         }
 
@@ -69,7 +60,7 @@ final class ProductRepository
     }
 
     /**
-     * Get branch data for a single product branch.
+     * Get branch data for a product.
      *
      * @return array<string,mixed>|null
      */
@@ -82,16 +73,10 @@ final class ProductRepository
             $this->database->prepare(
                 "
                 SELECT
-                    regular_price,
-                    sale_price,
-                    stock_quantity,
-                    manage_stock,
-                    stock_status,
                     is_enabled
                 FROM {$this->table}
                 WHERE product_id = %d
                   AND branch_id = %d
-                  AND is_enabled = 1
                 LIMIT 1
                 ",
                 $productId,
@@ -105,12 +90,7 @@ final class ProductRepository
         }
 
         return [
-            'regular_price'  => (float) $row['regular_price'],
-            'sale_price'     => $this->normalizeSalePrice($row['sale_price'] ?? null),
-            'stock_quantity' => (int) $row['stock_quantity'],
-            'manage_stock'   => (bool) $row['manage_stock'],
-            'stock_status'   => (string) $row['stock_status'],
-            'is_enabled'     => (bool) $row['is_enabled'],
+            'is_enabled' => (bool) $row['is_enabled'],
         ];
     }
 
@@ -119,8 +99,10 @@ final class ProductRepository
      *
      * @return int[]
      */
-    public function findProductsByBranch(int $branchId): array
-    {
+    public function findProductsByBranch(
+        int $branchId
+    ): array {
+
         $productIds = $this->database->get_col(
             $this->database->prepare(
                 "
@@ -138,7 +120,10 @@ final class ProductRepository
             return [];
         }
 
-        return array_map('intval', $productIds);
+        return array_map(
+            'intval',
+            $productIds
+        );
     }
 
     /**
@@ -163,7 +148,10 @@ final class ProductRepository
         );
 
         $existing = array_flip(
-            array_map('intval', $existing)
+            array_map(
+                'intval',
+                $existing
+            )
         );
 
         foreach ($branches as $branchId => $branch) {
@@ -200,15 +188,13 @@ final class ProductRepository
         array $branch
     ): void {
 
-        $data = $this->prepareData(
-            $productId,
-            $branchId,
-            $branch
-        );
-
         $this->database->insert(
             $this->table,
-            $data
+            $this->prepareData(
+                $productId,
+                $branchId,
+                $branch
+            )
         );
     }
 
@@ -223,15 +209,13 @@ final class ProductRepository
         array $branch
     ): void {
 
-        $data = $this->prepareData(
-            $productId,
-            $branchId,
-            $branch
-        );
-
         $this->database->update(
             $this->table,
-            $data,
+            $this->prepareData(
+                $productId,
+                $branchId,
+                $branch
+            ),
             [
                 'product_id' => $productId,
                 'branch_id'  => $branchId,
@@ -240,7 +224,7 @@ final class ProductRepository
     }
 
     /**
-     * Prepare row data.
+     * Prepare database row.
      *
      * @param array<string,mixed> $branch
      *
@@ -252,37 +236,11 @@ final class ProductRepository
         array $branch
     ): array {
 
-        $salePrice = $branch['sale_price'] ?? null;
-
         return [
-            'product_id'     => $productId,
-            'branch_id'      => $branchId,
-            'regular_price'  => $branch['regular_price'],
-            'sale_price'     => $salePrice === '' || $salePrice === null
-                ? null
-                : $salePrice,
-            'stock_quantity' => $branch['stock_quantity'],
-            'manage_stock'   => $branch['manage_stock'],
-            'stock_status'   => $branch['stock_status'],
-            'is_enabled'     => $branch['is_enabled'],
-            'updated_at'     => current_time('mysql'),
+            'product_id' => $productId,
+            'branch_id'  => $branchId,
+            'is_enabled' => !empty($branch['is_enabled']) ? 1 : 0,
+            'updated_at' => current_time('mysql'),
         ];
-    }
-
-    /**
-     * Normalize the branch sale price.
-     *
-     * An empty or NULL database value means
-     * that the product is not on sale.
-     */
-    private function normalizeSalePrice(
-        mixed $salePrice
-    ): float|string {
-
-        if ($salePrice === null || $salePrice === '') {
-            return '';
-        }
-
-        return (float) $salePrice;
     }
 }

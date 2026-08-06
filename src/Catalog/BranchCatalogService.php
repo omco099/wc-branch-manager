@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Catalog;
 
+use Alnaseeg\BranchManager\Branch\Branch;
 use Alnaseeg\BranchManager\Branch\BranchResolver;
 use Alnaseeg\BranchManager\Product\ProductRepository;
 
@@ -27,21 +28,19 @@ final class BranchCatalogService
     }
 
     /**
-     * Return the current branch id.
+     * Return the current branch.
      */
-    public function branchId(): ?int
+    public function branch(): ?Branch
     {
-        $branch = $this->branchResolver->current();
-
-        return $branch?->id();
+        return $this->branchResolver->current();
     }
 
     /**
-     * Return the current branch.
+     * Return the current branch ID.
      */
-    public function branch()
+    public function branchId(): ?int
     {
-        return $this->branchResolver->current();
+        return $this->branch()?->id();
     }
 
     /**
@@ -52,7 +51,7 @@ final class BranchCatalogService
      */
     public function queryProductIds(): array
     {
-        $branch = $this->branchResolver->current();
+        $branch = $this->branch();
 
         if ($branch === null) {
             return [];

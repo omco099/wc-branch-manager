@@ -90,17 +90,15 @@ final class ProductSaver
     {
         $branches = [];
 
-        $sanitizer = new BranchDataSanitizer();
-
         foreach ($_POST['wcbm_branch'] as $branchId => $branch) {
 
             if (! is_array($branch)) {
                 continue;
             }
 
-            $branches[(int) $branchId] = $sanitizer->sanitize(
-                $branch
-            );
+            $branches[(int) $branchId] = [
+                'is_enabled' => ! empty($branch['is_enabled']) ? 1 : 0,
+            ];
         }
 
         return $branches;

@@ -37,7 +37,7 @@ final class OrderMetaManager
      */
     public function saveBranchMeta(
         WC_Order $order,
-        array $data
+        array $_data
     ): void {
         $branch = $this->branchResolver->current();
 

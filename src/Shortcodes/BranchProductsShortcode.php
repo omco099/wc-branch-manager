@@ -38,7 +38,8 @@ final class BranchProductsShortcode
      */
     public function render(
         array $attributes = [],
-        ?string $content = null
+        ?string $content = null,
+        string $tag = ''
     ): string {
 
         if (!function_exists('WC')) {
@@ -51,7 +52,7 @@ final class BranchProductsShortcode
 
         $productIds = $this->catalog->queryProductIds();
 
-        if ($productIds === [0]) {
+        if ($productIds === [] || $productIds === [0]) {
             return '';
         }
 
@@ -105,13 +106,13 @@ final class BranchProductsShortcode
             <button
                 type="button"
                 class="swiper-button-prev"
-                aria-label="<?php echo esc_attr__('Previous products', 'alnaseeg'); ?>"
+                aria-label="<?php echo esc_attr__('Previous products', 'alnaseeg-branch-manager'); ?>"
             ></button>
 
             <button
                 type="button"
                 class="swiper-button-next"
-                aria-label="<?php echo esc_attr__('Next products', 'alnaseeg'); ?>"
+                aria-label="<?php echo esc_attr__('Next products', 'alnaseeg-branch-manager'); ?>"
             ></button>
 
             <div class="swiper-pagination"></div>

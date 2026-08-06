@@ -42,43 +42,6 @@ final class ProductFields
 
                         <label>
                             <?php esc_html_e(
-                                'Manage Stock',
-                                'alnaseeg-branch-manager'
-                            ); ?>
-                        </label>
-
-                        <input
-                            type="checkbox"
-                            value="1"
-                            name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][manage_stock]"
-                            <?php checked(! empty($values['manage_stock'])); ?>
-                        >
-
-                    </p>
-
-                    <p class="form-field">
-
-                        <label>
-                            <?php esc_html_e(
-                                'Stock Quantity',
-                                'alnaseeg-branch-manager'
-                            ); ?>
-                        </label>
-
-                        <input
-                            type="number"
-                            class="short"
-                            min="0"
-                            name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][stock_quantity]"
-                            value="<?php echo esc_attr((string) ($values['stock_quantity'] ?? '')); ?>"
-                        >
-
-                    </p>
-
-                    <p class="form-field">
-
-                        <label>
-                            <?php esc_html_e(
                                 'Available In This Branch',
                                 'alnaseeg-branch-manager'
                             ); ?>
