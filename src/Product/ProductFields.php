@@ -48,6 +48,12 @@ final class ProductFields
                         </label>
 
                         <input
+                            type="hidden"
+                            name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][is_enabled]"
+                            value="0"
+                        >
+
+                        <input
                             type="checkbox"
                             value="1"
                             name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][is_enabled]"
