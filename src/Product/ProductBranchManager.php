@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Product;
 
-use Alnaseeg\BranchManager\Branch\BranchRepository;
 use Alnaseeg\BranchManager\Branch\BranchResolver;
-use WC_Product;
+use Alnaseeg\BranchManager\Branch\BranchRepository;
 
 /**
  * Handles branch selection for product add-to-cart operations.
@@ -52,6 +51,16 @@ final class ProductBranchManager
             10,
             2
         );
+
+        /*
+         * Save the selected branch to the order item.
+         */
+        add_action(
+            'woocommerce_checkout_create_order_line_item',
+            [$this, 'saveOrderItemBranch'],
+            10,
+            4
+        );
     }
 
     /**
@@ -61,21 +70,18 @@ final class ProductBranchManager
     {
         global $product;
 
-        if (! $product instanceof WC_Product) {
+        if (! $product instanceof \WC_Product) {
             return;
         }
 
         /*
-         * If the product is being viewed from a branch page,
-         * the branch is already known.
+         * A product opened from a branch page already
+         * has a branch context.
          */
         if ($this->branchResolver->resolve() !== null) {
             return;
         }
 
-        /*
-         * Branch availability is managed on the parent product.
-         */
         $productId = $product->is_type('variation')
             ? (int) $product->get_parent_id()
             : (int) $product->get_id();
@@ -91,11 +97,10 @@ final class ProductBranchManager
         }
 
         /*
-         * If the product belongs to only one branch,
-         * select it automatically.
+         * If the product is available in exactly one branch,
+         * select it automatically and do not display a selector.
          */
         if (count($branches) === 1) {
-
             $branchId = (int) array_key_first($branches);
 
             echo '<input type="hidden" name="wcbm_branch_id" value="' .
@@ -178,7 +183,7 @@ final class ProductBranchManager
     }
 
     /**
-     * Display the selected branch in the cart.
+     * Display branch information in the cart.
      *
      * @param array<int,array<string,mixed>> $itemData
      * @param array<string,mixed>            $cartItem
@@ -202,7 +207,7 @@ final class ProductBranchManager
             return $itemData;
         }
 
-        $branch = $this->branchRepository->findById(
+        $branch = $this->branchRepository->find(
             $branchId
         );
 
@@ -215,12 +220,64 @@ final class ProductBranchManager
                 'Branch',
                 'alnaseeg-branch-manager'
             ),
-            'value' => esc_html(
-                $branch->name()
-            ),
+            'value' => esc_html($branch->name()),
         ];
 
         return $itemData;
+    }
+
+    /**
+     * Save branch information to the order item.
+     *
+     * @param \WC_Order_Item_Product $item
+     * @param string                 $cartItemKey
+     * @param array<string,mixed>    $values
+     * @param \WC_Order              $order
+     */
+    public function saveOrderItemBranch(
+        \WC_Order_Item_Product $item,
+        string $cartItemKey,
+        array $values,
+        \WC_Order $order
+    ): void {
+
+        if (! isset($values['wcbm_branch_id'])) {
+            return;
+        }
+
+        $branchId = absint(
+            $values['wcbm_branch_id']
+        );
+
+        if ($branchId <= 0) {
+            return;
+        }
+
+        $branch = $this->branchRepository->find(
+            $branchId
+        );
+
+        if ($branch === null) {
+            return;
+        }
+
+        $item->add_meta_data(
+            '_wcbm_branch_id',
+            $branch->id(),
+            true
+        );
+
+        $item->add_meta_data(
+            '_wcbm_branch_name',
+            $branch->name(),
+            true
+        );
+
+        $item->add_meta_data(
+            '_wcbm_branch_slug',
+            $branch->slug(),
+            true
+        );
     }
 
     /**
@@ -232,23 +289,23 @@ final class ProductBranchManager
         int $productId
     ): array {
 
-        $productData = $this->productRepository->findByProduct(
+        $data = $this->productRepository->findByProduct(
             $productId
         );
 
-        if ($productData === []) {
+        if ($data === []) {
             return [];
         }
 
         $branches = [];
 
-        foreach ($productData as $branchId => $branchData) {
+        foreach ($data as $branchId => $branchData) {
 
             if (empty($branchData['is_enabled'])) {
                 continue;
             }
 
-            $branch = $this->branchRepository->findById(
+            $branch = $this->branchRepository->find(
                 (int) $branchId
             );
 
@@ -271,22 +328,16 @@ final class ProductBranchManager
     ): ?int {
 
         /*
-         * Products opened from a branch page
-         * automatically use that branch.
+         * A branch page provides the branch automatically.
          */
         $branch = $this->branchResolver->resolve();
 
         if ($branch !== null) {
-            return $this->validateBranchForProduct(
-                $productId,
-                $variationId,
-                $branch->id()
-            );
+            return $branch->id();
         }
 
         /*
-         * Products opened outside a branch page
-         * require an explicit branch selection.
+         * Otherwise the customer must select a branch.
          */
         if (! isset($_POST['wcbm_branch_id'])) {
             return null;
@@ -300,23 +351,10 @@ final class ProductBranchManager
             return null;
         }
 
-        return $this->validateBranchForProduct(
-            $productId,
-            $variationId,
-            $branchId
-        );
-    }
-
-    /**
-     * Validate that the selected branch is available
-     * for the product.
-     */
-    private function validateBranchForProduct(
-        int $productId,
-        int $variationId,
-        int $branchId
-    ): ?int {
-
+        /*
+         * Validate that the selected branch actually
+         * has this product enabled.
+         */
         $resolvedProductId = $variationId > 0
             ? (int) wp_get_post_parent_id($variationId)
             : $productId;

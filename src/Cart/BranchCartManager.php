@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Cart;
 
-use Alnaseeg\BranchManager\Branch\BranchResolver;
-use Alnaseeg\BranchManager\Product\ProductRepository;
-
 /**
- * Keeps the WooCommerce cart synchronized
- * with the currently active branch.
+ * Keeps WooCommerce cart branch data consistent.
  */
 final class BranchCartManager
 {
@@ -19,50 +15,22 @@ final class BranchCartManager
      */
     private bool $synchronizing = false;
 
-    public function __construct(
-        private readonly BranchResolver $branchResolver,
-        private readonly ProductRepository $productRepository
-    ) {
-    }
-
     /**
      * Register hooks.
      */
     public function register(): void
     {
-        /*
-         * Normal frontend requests.
-         */
-        add_action(
-            'wp_loaded',
-            [$this, 'synchronizeCart'],
-            20
-        );
-
-        /*
-         * Run before WooCommerce validates the cart.
-         */
         add_action(
             'woocommerce_check_cart_items',
             [$this, 'synchronizeCart'],
             1
         );
-
-        /*
-         * Remove stale WooCommerce notices generated
-         * when products from a previous branch become
-         * non-purchasable.
-         */
-        add_action(
-            'wp_loaded',
-            [$this, 'clearStaleBranchNotices'],
-            99
-        );
     }
 
     /**
-     * Remove cart items that do not belong
-     * to the currently active branch.
+     * Synchronize cart branch data.
+     *
+     * A cart may contain products from one branch only.
      */
     public function synchronizeCart(): void
     {
@@ -87,37 +55,42 @@ final class BranchCartManager
             return;
         }
 
-        $branch = $this->branchResolver->resolve();
-
-        if ($branch === null) {
-            return;
-        }
-
         $this->synchronizing = true;
 
         try {
 
+            $cartBranchId = null;
+
             foreach ($cart->get_cart() as $cartItemKey => $cartItem) {
 
-                /*
-                 * Branch availability is stored
-                 * on the parent product.
-                 */
-                $productId = (int) $cartItem['product_id'];
+                $itemBranchId = $this->getCartItemBranchId(
+                    $cartItem
+                );
 
-                if ($productId <= 0) {
+                /*
+                 * A cart item without a branch cannot
+                 * participate in branch validation.
+                 *
+                 * CartValidator / ProductBranchManager
+                 * should prevent this for new items.
+                 */
+                if ($itemBranchId === null) {
                     continue;
                 }
 
-                $branchData = $this->productRepository->findBranch(
-                    $productId,
-                    $branch->id()
-                );
+                /*
+                 * First valid branch becomes the cart branch.
+                 */
+                if ($cartBranchId === null) {
+                    $cartBranchId = $itemBranchId;
+                    continue;
+                }
 
-                if (
-                    $branchData !== null
-                    && ! empty($branchData['is_enabled'])
-                ) {
+                /*
+                 * Never allow different branches
+                 * to remain in the same cart.
+                 */
+                if ($itemBranchId === $cartBranchId) {
                     continue;
                 }
 
@@ -133,96 +106,24 @@ final class BranchCartManager
     }
 
     /**
-     * Remove stale WooCommerce notices caused by products
-     * becoming non-purchasable after switching branches.
+     * Get the branch ID stored on a cart item.
      *
-     * Other WooCommerce errors and notices are preserved.
+     * @param array<string,mixed> $cartItem
      */
-    public function clearStaleBranchNotices(): void
-    {
-        if (
-            is_admin()
-            && ! wp_doing_ajax()
-        ) {
-            return;
+    private function getCartItemBranchId(
+        array $cartItem
+    ): ?int {
+
+        if (! isset($cartItem['wcbm_branch_id'])) {
+            return null;
         }
 
-        if (! function_exists('WC')) {
-            return;
-        }
-
-        $session = WC()->session;
-
-        if ($session === null) {
-            return;
-        }
-
-        $notices = $session->get(
-            'wc_notices',
-            []
+        $branchId = absint(
+            $cartItem['wcbm_branch_id']
         );
 
-        if (! is_array($notices) || $notices === []) {
-            return;
-        }
-
-        $changed = false;
-
-        foreach ($notices as $noticeType => $typeNotices) {
-
-            if (! is_array($typeNotices)) {
-                continue;
-            }
-
-            foreach ($typeNotices as $index => $notice) {
-
-                $message = '';
-
-                if (is_array($notice)) {
-                    $message = isset($notice['notice'])
-                        ? wp_strip_all_tags((string) $notice['notice'])
-                        : '';
-                } elseif (is_string($notice)) {
-                    $message = wp_strip_all_tags($notice);
-                }
-
-                if ($message === '') {
-                    continue;
-                }
-
-                if (
-                    stripos(
-                        $message,
-                        'can no longer be purchased'
-                    ) === false
-                ) {
-                    continue;
-                }
-
-                unset(
-                    $notices[$noticeType][$index]
-                );
-
-                $changed = true;
-            }
-
-            if (
-                isset($notices[$noticeType])
-                && is_array($notices[$noticeType])
-            ) {
-                $notices[$noticeType] = array_values(
-                    $notices[$noticeType]
-                );
-            }
-        }
-
-        if (! $changed) {
-            return;
-        }
-
-        $session->set(
-            'wc_notices',
-            $notices
-        );
+        return $branchId > 0
+            ? $branchId
+            : null;
     }
 }

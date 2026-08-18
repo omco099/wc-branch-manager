@@ -17,6 +17,7 @@ use Alnaseeg\BranchManager\Cart\CartValidator;
 use Alnaseeg\BranchManager\Catalog\BranchCatalogFilter;
 use Alnaseeg\BranchManager\Catalog\BranchCatalogService;
 use Alnaseeg\BranchManager\Checkout\OrderMetaManager;
+use Alnaseeg\BranchManager\Product\ProductBranchManager;
 use Alnaseeg\BranchManager\Product\ProductRepository;
 use Alnaseeg\BranchManager\Shortcodes\BranchProductsShortcode;
 
@@ -123,6 +124,19 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new ProductRepository($this->wpdb);
+    }
+
+    /**
+     * Product branch manager.
+     */
+    public function productBranchManager(): ProductBranchManager
+    {
+        return $this->services[__METHOD__]
+            ??= new ProductBranchManager(
+                $this->branchResolver(),
+                $this->branchRepository(),
+                $this->productRepository()
+            );
     }
 
     /**

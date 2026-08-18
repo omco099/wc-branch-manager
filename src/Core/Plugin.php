@@ -33,6 +33,8 @@ final class Plugin
 
         (new ProductDataPanel())->register();
 
+        (new ProductDataPanel())->register();
+
         (new ProductSaver())->register();
     }
 
@@ -74,6 +76,11 @@ final class Plugin
          * Register branch products shortcode.
          */
         $services->branchProductsShortcode()->register();
+
+        /*
+         * Register product branch selector.
+         */
+        $services->productBranchManager()->register();
 
         /*
          * Register cart validation.
