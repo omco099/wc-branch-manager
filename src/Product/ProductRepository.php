@@ -37,6 +37,7 @@ final class ProductRepository
                     is_enabled
                 FROM {$this->table}
                 WHERE product_id = %d
+                ORDER BY branch_id ASC
                 ",
                 $productId
             ),
@@ -127,7 +128,15 @@ final class ProductRepository
     }
 
     /**
-     * Persist branch data for a product.
+     * Persist branch availability for a product.
+     *
+     * The submitted branches are treated as the complete
+     * enabled-state for the product.
+     *
+     * A branch included in the request is enabled.
+     * A branch not included in the request is disabled.
+     *
+     * Existing rows are never deleted.
      *
      * @param array<int,array<string,mixed>> $branches
      */
@@ -136,6 +145,13 @@ final class ProductRepository
         array $branches
     ): void {
 
+        /*
+         * The MVP currently has three fixed branches.
+         *
+         * We use the existing database rows when available.
+         * Missing rows are created without touching any
+         * unrelated product data.
+         */
         $existing = $this->database->get_col(
             $this->database->prepare(
                 "
@@ -147,100 +163,151 @@ final class ProductRepository
             )
         );
 
-        $existing = array_flip(
-            array_map(
-                'intval',
-                $existing
-            )
+        $existingIds = array_map(
+            'intval',
+            $existing
         );
+
+        /*
+         * Normalize submitted branch IDs.
+         *
+         * Example:
+         *
+         * [
+         *     1 => ['is_enabled' => 1],
+         *     2 => ['is_enabled' => 1],
+         * ]
+         *
+         * means:
+         *
+         * branch 1 = enabled
+         * branch 2 = enabled
+         * every other existing branch = disabled
+         */
+        $enabledBranchIds = [];
 
         foreach ($branches as $branchId => $branch) {
 
             $branchId = (int) $branchId;
 
-            if (isset($existing[$branchId])) {
+            if ($branchId <= 0) {
+                continue;
+            }
 
-                $this->update(
-                    $productId,
+            if (! empty($branch['is_enabled'])) {
+                $enabledBranchIds[] = $branchId;
+            }
+        }
+
+        $enabledBranchIds = array_values(
+            array_unique($enabledBranchIds)
+        );
+
+        /*
+         * Update every existing branch row.
+         *
+         * This is important because unchecked checkboxes
+         * are not submitted by the browser.
+         *
+         * Therefore:
+         *
+         * existing + submitted  = 1
+         * existing + not submitted = 0
+         */
+        foreach ($existingIds as $branchId) {
+
+            $this->updateEnabledState(
+                $productId,
+                $branchId,
+                in_array(
                     $branchId,
-                    $branch
-                );
+                    $enabledBranchIds,
+                    true
+                )
+            );
+        }
 
+        /*
+         * Create rows for newly introduced branches.
+         *
+         * Normally the installer already creates all three
+         * branch rows, but this keeps the repository safe if
+         * a product is missing a branch row.
+         */
+        foreach ($enabledBranchIds as $branchId) {
+
+            if (in_array(
+                $branchId,
+                $existingIds,
+                true
+            )) {
                 continue;
             }
 
             $this->insert(
                 $productId,
                 $branchId,
-                $branch
+                true
             );
         }
     }
 
     /**
-     * Insert a new branch record.
-     *
-     * @param array<string,mixed> $branch
+     * Update only the enabled state of an existing branch.
      */
-    private function insert(
+    private function updateEnabledState(
         int $productId,
         int $branchId,
-        array $branch
-    ): void {
-
-        $this->database->insert(
-            $this->table,
-            $this->prepareData(
-                $productId,
-                $branchId,
-                $branch
-            )
-        );
-    }
-
-    /**
-     * Update an existing branch record.
-     *
-     * @param array<string,mixed> $branch
-     */
-    private function update(
-        int $productId,
-        int $branchId,
-        array $branch
+        bool $enabled
     ): void {
 
         $this->database->update(
             $this->table,
-            $this->prepareData(
-                $productId,
-                $branchId,
-                $branch
-            ),
+            [
+                'is_enabled' => $enabled ? 1 : 0,
+                'updated_at' => current_time('mysql'),
+            ],
             [
                 'product_id' => $productId,
                 'branch_id'  => $branchId,
+            ],
+            [
+                '%d',
+                '%s',
+            ],
+            [
+                '%d',
+                '%d',
             ]
         );
     }
 
     /**
-     * Prepare database row.
+     * Insert a missing branch row.
      *
-     * @param array<string,mixed> $branch
-     *
-     * @return array<string,mixed>
+     * Only branch availability is initialized here.
+     * Existing product branch data is never overwritten.
      */
-    private function prepareData(
+    private function insert(
         int $productId,
         int $branchId,
-        array $branch
-    ): array {
+        bool $enabled
+    ): void {
 
-        return [
-            'product_id' => $productId,
-            'branch_id'  => $branchId,
-            'is_enabled' => !empty($branch['is_enabled']) ? 1 : 0,
-            'updated_at' => current_time('mysql'),
-        ];
+        $this->database->insert(
+            $this->table,
+            [
+                'product_id' => $productId,
+                'branch_id'  => $branchId,
+                'is_enabled' => $enabled ? 1 : 0,
+                'updated_at' => current_time('mysql'),
+            ],
+            [
+                '%d',
+                '%d',
+                '%d',
+                '%s',
+            ]
+        );
     }
 }
