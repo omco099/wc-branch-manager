@@ -2,341 +2,117 @@
 
 declare(strict_types=1);
 
-namespace Alnaseeg\BranchManager\Product;
+namespace Alnaseeg\BranchManager\Branch;
 
-use Alnaseeg\BranchManager\Branch\BranchRepository;
-use Alnaseeg\BranchManager\Branch\BranchResolver;
-use WC_Product;
+use Alnaseeg\BranchManager\Contracts\BranchRepositoryInterface;
+use wpdb;
 
-/**
- * Handles branch selection for product add-to-cart operations.
- */
-final class ProductBranchManager
+final class BranchRepository implements BranchRepositoryInterface
 {
+    /**
+     * Branches table name.
+     */
+    private string $table;
+
+    /**
+     * WordPress database instance.
+     */
     public function __construct(
-        private readonly BranchResolver $branchResolver,
-        private readonly BranchRepository $branchRepository,
-        private readonly ProductRepository $productRepository
+        private readonly wpdb $database
     ) {
+        $this->table = $database->prefix . 'wcbm_branches';
     }
 
     /**
-     * Register WooCommerce hooks.
+     * {@inheritDoc}
      */
-    public function register(): void
+    public function findById(int $id): ?Branch
     {
-        /*
-         * Render branch selector before the add-to-cart button.
-         */
-        add_action(
-            'woocommerce_before_add_to_cart_button',
-            [$this, 'renderSelector']
+        $row = $this->database->get_row(
+            $this->database->prepare(
+                "
+                SELECT id, name, slug, status
+                FROM {$this->table}
+                WHERE id = %d
+                LIMIT 1
+                ",
+                $id
+            ),
+            ARRAY_A
         );
 
-        /*
-         * Store the selected branch in the cart item.
-         */
-        add_filter(
-            'woocommerce_add_cart_item_data',
-            [$this, 'addCartItemBranch'],
-            10,
-            3
-        );
+        if ($row === null) {
+            return null;
+        }
 
-        /*
-         * Display the selected branch in the cart.
-         */
-        add_filter(
-            'woocommerce_get_item_data',
-            [$this, 'displayCartItemBranch'],
-            10,
-            2
-        );
+        return $this->hydrate($row);
     }
 
     /**
-     * Render the branch selector on the single product page.
+     * {@inheritDoc}
      */
-    public function renderSelector(): void
+    public function findBySlug(string $slug): ?Branch
     {
-        global $product;
-
-        if (! $product instanceof WC_Product) {
-            return;
-        }
-
-        /*
-         * If the product is being viewed from a branch page,
-         * the branch is already known.
-         */
-        if ($this->branchResolver->resolve() !== null) {
-            return;
-        }
-
-        /*
-         * Branch availability is managed on the parent product.
-         */
-        $productId = $product->is_type('variation')
-            ? (int) $product->get_parent_id()
-            : (int) $product->get_id();
-
-        if ($productId <= 0) {
-            return;
-        }
-
-        $branches = $this->availableBranches($productId);
-
-        if ($branches === []) {
-            return;
-        }
-
-        /*
-         * If the product belongs to only one branch,
-         * select it automatically.
-         */
-        if (count($branches) === 1) {
-
-            $branchId = (int) array_key_first($branches);
-
-            echo '<input type="hidden" name="wcbm_branch_id" value="' .
-                esc_attr((string) $branchId) .
-                '">';
-
-            return;
-        }
-
-        $fieldId = 'wcbm-branch-selector';
-
-        ?>
-        <div class="wcbm-product-branch-selector">
-
-            <label
-                for="<?php echo esc_attr($fieldId); ?>"
-            >
-                <?php esc_html_e(
-                    'Choose Branch',
-                    'alnaseeg-branch-manager'
-                ); ?>
-            </label>
-
-            <select
-                id="<?php echo esc_attr($fieldId); ?>"
-                name="wcbm_branch_id"
-                required
-            >
-
-                <option value="">
-                    <?php esc_html_e(
-                        'Select a branch',
-                        'alnaseeg-branch-manager'
-                    ); ?>
-                </option>
-
-                <?php foreach ($branches as $branchId => $branchName) : ?>
-
-                    <option
-                        value="<?php echo esc_attr((string) $branchId); ?>"
-                    >
-                        <?php echo esc_html($branchName); ?>
-                    </option>
-
-                <?php endforeach; ?>
-
-            </select>
-
-        </div>
-        <?php
-    }
-
-    /**
-     * Add the selected branch to the cart item.
-     *
-     * @param array<string,mixed> $cartItemData
-     * @param int                 $productId
-     * @param int                 $variationId
-     *
-     * @return array<string,mixed>
-     */
-    public function addCartItemBranch(
-        array $cartItemData,
-        int $productId,
-        int $variationId
-    ): array {
-
-        $branchId = $this->resolveSelectedBranch(
-            $productId,
-            $variationId
-        );
-
-        if ($branchId === null) {
-            return $cartItemData;
-        }
-
-        $cartItemData['wcbm_branch_id'] = $branchId;
-
-        return $cartItemData;
-    }
-
-    /**
-     * Display the selected branch in the cart.
-     *
-     * @param array<int,array<string,mixed>> $itemData
-     * @param array<string,mixed>            $cartItem
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    public function displayCartItemBranch(
-        array $itemData,
-        array $cartItem
-    ): array {
-
-        if (! isset($cartItem['wcbm_branch_id'])) {
-            return $itemData;
-        }
-
-        $branchId = absint(
-            $cartItem['wcbm_branch_id']
-        );
-
-        if ($branchId <= 0) {
-            return $itemData;
-        }
-
-        $branch = $this->branchRepository->findById(
-            $branchId
-        );
-
-        if ($branch === null) {
-            return $itemData;
-        }
-
-        $itemData[] = [
-            'key'   => __(
-                'Branch',
-                'alnaseeg-branch-manager'
+        $row = $this->database->get_row(
+            $this->database->prepare(
+                "
+                SELECT id, name, slug, status
+                FROM {$this->table}
+                WHERE slug = %s
+                LIMIT 1
+                ",
+                $slug
             ),
-            'value' => esc_html(
-                $branch->name()
-            ),
-        ];
+            ARRAY_A
+        );
 
-        return $itemData;
+        if ($row === null) {
+            return null;
+        }
+
+        return $this->hydrate($row);
     }
 
     /**
-     * Get branches where the product is enabled.
-     *
-     * @return array<int,string>
+     * {@inheritDoc}
      */
-    private function availableBranches(
-        int $productId
-    ): array {
-
-        $productData = $this->productRepository->findByProduct(
-            $productId
+    public function all(): array
+    {
+        $rows = $this->database->get_results(
+            "
+            SELECT id, name, slug, status
+            FROM {$this->table}
+            WHERE status = 'active'
+            ORDER BY id ASC
+            ",
+            ARRAY_A
         );
 
-        if ($productData === []) {
+        if (empty($rows)) {
             return [];
         }
 
         $branches = [];
 
-        foreach ($productData as $branchId => $branchData) {
-
-            if (empty($branchData['is_enabled'])) {
-                continue;
-            }
-
-            $branch = $this->branchRepository->findById(
-                (int) $branchId
-            );
-
-            if ($branch === null) {
-                continue;
-            }
-
-            $branches[(int) $branchId] = $branch->name();
+        foreach ($rows as $row) {
+            $branches[] = $this->hydrate($row);
         }
 
         return $branches;
     }
 
     /**
-     * Resolve the branch for the current add-to-cart request.
+     * Hydrate Branch entity.
+     *
+     * @param array<string,mixed> $row
      */
-    private function resolveSelectedBranch(
-        int $productId,
-        int $variationId
-    ): ?int {
-
-        /*
-         * Products opened from a branch page
-         * automatically use that branch.
-         */
-        $branch = $this->branchResolver->resolve();
-
-        if ($branch !== null) {
-            return $this->validateBranchForProduct(
-                $productId,
-                $variationId,
-                $branch->id()
-            );
-        }
-
-        /*
-         * Products opened outside a branch page
-         * require an explicit branch selection.
-         */
-        if (! isset($_POST['wcbm_branch_id'])) {
-            return null;
-        }
-
-        $branchId = absint(
-            wp_unslash($_POST['wcbm_branch_id'])
+    private function hydrate(array $row): Branch
+    {
+        return new Branch(
+            (int) $row['id'],
+            (string) $row['name'],
+            (string) $row['slug'],
+            (string) $row['status']
         );
-
-        if ($branchId <= 0) {
-            return null;
-        }
-
-        return $this->validateBranchForProduct(
-            $productId,
-            $variationId,
-            $branchId
-        );
-    }
-
-    /**
-     * Validate that the selected branch is available
-     * for the product.
-     */
-    private function validateBranchForProduct(
-        int $productId,
-        int $variationId,
-        int $branchId
-    ): ?int {
-
-        $resolvedProductId = $variationId > 0
-            ? (int) wp_get_post_parent_id($variationId)
-            : $productId;
-
-        if ($resolvedProductId <= 0) {
-            $resolvedProductId = $productId;
-        }
-
-        $branchData = $this->productRepository->findBranch(
-            $resolvedProductId,
-            $branchId
-        );
-
-        if (
-            $branchData === null
-            || empty($branchData['is_enabled'])
-        ) {
-            return null;
-        }
-
-        return $branchId;
     }
 }

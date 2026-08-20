@@ -51,16 +51,6 @@ final class ProductBranchManager
             10,
             2
         );
-
-        /*
-         * Save the selected branch to the order item.
-         */
-        add_action(
-            'woocommerce_checkout_create_order_line_item',
-            [$this, 'saveOrderItemBranch'],
-            10,
-            4
-        );
     }
 
     /**
@@ -207,7 +197,7 @@ final class ProductBranchManager
             return $itemData;
         }
 
-        $branch = $this->branchRepository->find(
+        $branch = $this->branchRepository->findById(
             $branchId
         );
 
@@ -225,61 +215,7 @@ final class ProductBranchManager
 
         return $itemData;
     }
-
-    /**
-     * Save branch information to the order item.
-     *
-     * @param \WC_Order_Item_Product $item
-     * @param string                 $cartItemKey
-     * @param array<string,mixed>    $values
-     * @param \WC_Order              $order
-     */
-    public function saveOrderItemBranch(
-        \WC_Order_Item_Product $item,
-        string $cartItemKey,
-        array $values,
-        \WC_Order $order
-    ): void {
-
-        if (! isset($values['wcbm_branch_id'])) {
-            return;
-        }
-
-        $branchId = absint(
-            $values['wcbm_branch_id']
-        );
-
-        if ($branchId <= 0) {
-            return;
-        }
-
-        $branch = $this->branchRepository->find(
-            $branchId
-        );
-
-        if ($branch === null) {
-            return;
-        }
-
-        $item->add_meta_data(
-            '_wcbm_branch_id',
-            $branch->id(),
-            true
-        );
-
-        $item->add_meta_data(
-            '_wcbm_branch_name',
-            $branch->name(),
-            true
-        );
-
-        $item->add_meta_data(
-            '_wcbm_branch_slug',
-            $branch->slug(),
-            true
-        );
-    }
-
+    
     /**
      * Get branches where the product is enabled.
      *
@@ -305,7 +241,7 @@ final class ProductBranchManager
                 continue;
             }
 
-            $branch = $this->branchRepository->find(
+            $branch = $this->branchRepository->findById(
                 (int) $branchId
             );
 
