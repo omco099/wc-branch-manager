@@ -17,8 +17,8 @@ final class Menu
     public function register(): void
     {
         add_menu_page(
-            __('Branches', 'alnaseeg-branch-manager'),
-            __('Branches', 'alnaseeg-branch-manager'),
+            __('Branches', 'massar-branch-manager'),
+            __('Branches', 'massar-branch-manager'),
             'manage_options',
             'wcbm-branches',
             [

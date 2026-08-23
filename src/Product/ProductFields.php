@@ -45,7 +45,7 @@ final class ProductFields
                         <label>
                             <?php esc_html_e(
                                 'Available In This Branch',
-                                'alnaseeg-branch-manager'
+                                'massar-branch-manager'
                             ); ?>
                         </label>
 

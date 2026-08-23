@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Product;
 
-use Alnaseeg\BranchManager\Branch\BranchResolver;
 use Alnaseeg\BranchManager\Branch\BranchRepository;
+use Alnaseeg\BranchManager\Branch\BranchResolver;
 
 /**
  * Handles branch selection for product add-to-cart operations.
@@ -110,7 +110,7 @@ final class ProductBranchManager
             >
                 <?php esc_html_e(
                     'Choose Branch',
-                    'alnaseeg-branch-manager'
+                    'massar-branch-manager'
                 ); ?>
             </label>
 
@@ -123,7 +123,7 @@ final class ProductBranchManager
                 <option value="">
                     <?php esc_html_e(
                         'Select a branch',
-                        'alnaseeg-branch-manager'
+                        'massar-branch-manager'
                     ); ?>
                 </option>
 
@@ -208,14 +208,14 @@ final class ProductBranchManager
         $itemData[] = [
             'key'   => __(
                 'Branch',
-                'alnaseeg-branch-manager'
+                'massar-branch-manager'
             ),
             'value' => esc_html($branch->name()),
         ];
 
         return $itemData;
     }
-    
+
     /**
      * Get branches where the product is enabled.
      *

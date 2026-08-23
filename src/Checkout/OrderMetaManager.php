@@ -109,7 +109,7 @@ final class OrderMetaManager
      * @param WC_Order_Item_Product $item
      * @param string                $cartItemKey
      * @param array<string,mixed>   $values
-     * @param WC_Order               $order
+     * @param WC_Order              $order
      */
     public function saveOrderItemBranch(
         WC_Order_Item_Product $item,
@@ -145,7 +145,10 @@ final class OrderMetaManager
          * from the normal order item meta display.
          */
         $item->add_meta_data(
-            'الفرع',
+            __(
+                'Branch',
+                'massar-branch-manager'
+            ),
             $branch->name(),
             true
         );

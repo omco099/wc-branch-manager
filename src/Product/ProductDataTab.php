@@ -30,7 +30,10 @@ final class ProductDataTab
     public function addTab(array $tabs): array
     {
         $tabs['wcbm_branch_data'] = [
-            'label'    => __('Branch Data', 'alnaseeg-branch-manager'),
+            'label'    => __(
+                'Branch Data',
+                'massar-branch-manager'
+            ),
             'target'   => 'wcbm_branch_data_panel',
             'class'    => [],
             'priority' => 80,

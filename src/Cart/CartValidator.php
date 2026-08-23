@@ -85,7 +85,7 @@ final class CartValidator
             wc_add_notice(
                 __(
                     'Please select a branch before adding this product to the cart.',
-                    'alnaseeg-branch-manager'
+                    'massar-branch-manager'
                 ),
                 'error'
             );
@@ -110,7 +110,7 @@ final class CartValidator
             wc_add_notice(
                 __(
                     'This product is not available in the selected branch.',
-                    'alnaseeg-branch-manager'
+                    'massar-branch-manager'
                 ),
                 'error'
             );
@@ -127,7 +127,7 @@ final class CartValidator
             wc_add_notice(
                 __(
                     'You cannot add products from different branches to the same cart.',
-                    'alnaseeg-branch-manager'
+                    'massar-branch-manager'
                 ),
                 'error'
             );

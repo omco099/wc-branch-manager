@@ -117,11 +117,11 @@ final class Plugin
 
         wp_enqueue_style(
             'abm-branch-products',
-            ALNASEEG_BRANCH_MANAGER_PLUGIN_URL . 'assets/css/branch-products.css',
+            MASSAR_BRANCH_MANAGER_PLUGIN_URL . 'assets/css/branch-products.css',
             [
                 'abm-swiper',
             ],
-            ALNASEEG_BRANCH_MANAGER_PLUGIN_VERSION
+            MASSAR_BRANCH_MANAGER_PLUGIN_VERSION
         );
 
         wp_enqueue_script(
@@ -134,11 +134,11 @@ final class Plugin
 
         wp_enqueue_script(
             'abm-branch-products',
-            ALNASEEG_BRANCH_MANAGER_PLUGIN_URL . 'assets/js/branch-products.js',
+            MASSAR_BRANCH_MANAGER_PLUGIN_URL . 'assets/js/branch-products.js',
             [
                 'abm-swiper',
             ],
-            ALNASEEG_BRANCH_MANAGER_PLUGIN_VERSION,
+            MASSAR_BRANCH_MANAGER_PLUGIN_VERSION,
             true
         );
     }

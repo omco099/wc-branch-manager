@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Admin\Pages;
 
+use Alnaseeg\BranchManager\Branch\BranchRepository;
+use wpdb;
+
 /**
  * Renders the Branches admin page.
  */
@@ -14,28 +17,31 @@ final class BranchListPage
      */
     public function render(): void
     {
+        global $wpdb;
+
+        /** @var wpdb $wpdb */
+        $repository = new BranchRepository($wpdb);
+
+        $branches = $repository->all();
+
         ?>
         <div class="wrap">
 
             <h1 class="wp-heading-inline">
-                <?php esc_html_e('Branches', 'alnaseeg-branch-manager'); ?>
+                <?php esc_html_e(
+                    'Branches',
+                    'massar-branch-manager'
+                ); ?>
             </h1>
-
-            <a href="<?php echo esc_url(admin_url('admin.php?page=wcbm-branches&action=create')); ?>"
-               class="page-title-action">
-                <?php esc_html_e('Add New Branch', 'alnaseeg-branch-manager'); ?>
-            </a>
 
             <hr class="wp-header-end">
 
-            <div class="notice notice-info inline">
-                <p>
-                    <?php esc_html_e(
-                        'No branches have been created yet.',
-                        'alnaseeg-branch-manager'
-                    ); ?>
-                </p>
-            </div>
+            <p>
+                <?php esc_html_e(
+                    'These are the branches currently available in the store.',
+                    'massar-branch-manager'
+                ); ?>
+            </p>
 
             <table class="widefat striped">
 
@@ -44,23 +50,31 @@ final class BranchListPage
                 <tr>
 
                     <th width="80">
-                        <?php esc_html_e('ID', 'alnaseeg-branch-manager'); ?>
+                        <?php esc_html_e(
+                            'ID',
+                            'massar-branch-manager'
+                        ); ?>
                     </th>
 
                     <th>
-                        <?php esc_html_e('Name', 'alnaseeg-branch-manager'); ?>
+                        <?php esc_html_e(
+                            'Name',
+                            'massar-branch-manager'
+                        ); ?>
                     </th>
 
                     <th>
-                        <?php esc_html_e('Slug', 'alnaseeg-branch-manager'); ?>
+                        <?php esc_html_e(
+                            'Slug',
+                            'massar-branch-manager'
+                        ); ?>
                     </th>
 
                     <th width="120">
-                        <?php esc_html_e('Status', 'alnaseeg-branch-manager'); ?>
-                    </th>
-
-                    <th width="160">
-                        <?php esc_html_e('Actions', 'alnaseeg-branch-manager'); ?>
+                        <?php esc_html_e(
+                            'Status',
+                            'massar-branch-manager'
+                        ); ?>
                     </th>
 
                 </tr>
@@ -69,18 +83,76 @@ final class BranchListPage
 
                 <tbody>
 
-                <tr>
+                <?php if ($branches === []) : ?>
 
-                    <td colspan="5">
+                    <tr>
 
-                        <?php esc_html_e(
-                            'No branches found.',
-                            'alnaseeg-branch-manager'
-                        ); ?>
+                        <td colspan="4">
 
-                    </td>
+                            <?php esc_html_e(
+                                'No branches found.',
+                                'massar-branch-manager'
+                            ); ?>
 
-                </tr>
+                        </td>
+
+                    </tr>
+
+                <?php else : ?>
+
+                    <?php foreach ($branches as $branch) : ?>
+
+                        <tr>
+
+                            <td>
+                                <?php echo esc_html(
+                                    (string) $branch->id()
+                                ); ?>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    <?php echo esc_html(
+                                        $branch->name()
+                                    ); ?>
+                                </strong>
+                            </td>
+
+                            <td>
+                                <?php echo esc_html(
+                                    $branch->slug()
+                                ); ?>
+                            </td>
+
+                            <td>
+
+                                <?php if ($branch->status() === 'active') : ?>
+
+                                    <span>
+                                        <?php esc_html_e(
+                                            'Active',
+                                            'massar-branch-manager'
+                                        ); ?>
+                                    </span>
+
+                                <?php else : ?>
+
+                                    <span>
+                                        <?php esc_html_e(
+                                            'Inactive',
+                                            'massar-branch-manager'
+                                        ); ?>
+                                    </span>
+
+                                <?php endif; ?>
+
+                            </td>
+
+                        </tr>
+
+                    <?php endforeach; ?>
+
+                <?php endif; ?>
 
                 </tbody>
 

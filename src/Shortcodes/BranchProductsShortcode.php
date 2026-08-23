@@ -42,11 +42,11 @@ final class BranchProductsShortcode
         string $tag = ''
     ): string {
 
-        if (!function_exists('WC')) {
+        if (! function_exists('WC')) {
             return '';
         }
 
-        if (!$this->catalog->hasBranch()) {
+        if (! $this->catalog->hasBranch()) {
             return '';
         }
 
@@ -66,7 +66,7 @@ final class BranchProductsShortcode
             'no_found_rows'       => true,
         ]);
 
-        if (!$query->have_posts()) {
+        if (! $query->have_posts()) {
             return '';
         }
 
@@ -88,10 +88,12 @@ final class BranchProductsShortcode
 
                             <ul class="products columns-1">
 
-                                <?php wc_get_template_part(
+                                <?php
+                                wc_get_template_part(
                                     'content',
                                     'product'
-                                ); ?>
+                                );
+                                ?>
 
                             </ul>
 
@@ -106,13 +108,19 @@ final class BranchProductsShortcode
             <button
                 type="button"
                 class="swiper-button-prev"
-                aria-label="<?php echo esc_attr__('Previous products', 'alnaseeg-branch-manager'); ?>"
+                aria-label="<?php echo esc_attr__(
+                    'Previous products',
+                    'massar-branch-manager'
+                ); ?>"
             ></button>
 
             <button
                 type="button"
                 class="swiper-button-next"
-                aria-label="<?php echo esc_attr__('Next products', 'alnaseeg-branch-manager'); ?>"
+                aria-label="<?php echo esc_attr__(
+                    'Next products',
+                    'massar-branch-manager'
+                ); ?>"
             ></button>
 
             <div class="swiper-pagination"></div>
