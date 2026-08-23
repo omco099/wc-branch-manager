@@ -26,7 +26,9 @@ final class ProductFields
 
             $branchId = $branch->id();
 
-            $values = $productData[$branchId] ?? [];
+            $isEnabled = ! empty(
+                $productData[$branchId]['is_enabled']
+            );
 
             ?>
 
@@ -47,6 +49,11 @@ final class ProductFields
                             ); ?>
                         </label>
 
+                        <!--
+                         * Always submit a value for every branch.
+                         * Unchecked = 0
+                         * Checked   = 1
+                         -->
                         <input
                             type="hidden"
                             name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][is_enabled]"
@@ -57,7 +64,7 @@ final class ProductFields
                             type="checkbox"
                             value="1"
                             name="wcbm_branch[<?php echo esc_attr((string) $branchId); ?>][is_enabled]"
-                            <?php checked(! empty($values['is_enabled'])); ?>
+                            <?php checked($isEnabled); ?>
                         >
 
                     </p>

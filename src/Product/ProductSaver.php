@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Product;
 
-use wpdb;
-
 /**
  * Handles saving branch product data.
  */
@@ -82,7 +80,12 @@ final class ProductSaver
     }
 
     /**
-     * Collect branch data from request.
+     * Collect complete branch state from request.
+     *
+     * Every branch should contain is_enabled:
+     *
+     * 1 = enabled
+     * 0 = disabled
      *
      * @return array<int,array<string,mixed>>
      */
@@ -96,8 +99,16 @@ final class ProductSaver
                 continue;
             }
 
-            $branches[(int) $branchId] = [
-                'is_enabled' => ! empty($branch['is_enabled']) ? 1 : 0,
+            $branchId = absint($branchId);
+
+            if ($branchId <= 0) {
+                continue;
+            }
+
+            $branches[$branchId] = [
+                'is_enabled' => ! empty($branch['is_enabled'])
+                    ? 1
+                    : 0,
             ];
         }
 
