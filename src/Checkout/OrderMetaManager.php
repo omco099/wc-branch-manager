@@ -6,9 +6,10 @@ namespace Alnaseeg\BranchManager\Checkout;
 
 use Alnaseeg\BranchManager\Branch\BranchRepository;
 use WC_Order;
+use WC_Order_Item_Product;
 
 /**
- * Saves branch information into WooCommerce orders.
+ * Handles branch information for WooCommerce orders.
  */
 final class OrderMetaManager
 {
@@ -22,19 +23,32 @@ final class OrderMetaManager
      */
     public function register(): void
     {
+        /*
+         * Save branch information when the order is created.
+         */
         add_action(
             'woocommerce_checkout_create_order',
             [$this, 'saveBranchMeta'],
             10,
             2
         );
+
+        /*
+         * Display the branch under the product
+         * inside the WooCommerce order items table.
+         */
+        add_action(
+            'woocommerce_after_order_itemmeta',
+            [$this, 'displayBranchInOrderItem'],
+            10,
+            3
+        );
     }
 
     /**
      * Save the cart branch into the order metadata.
      *
-     * The cart is guaranteed to contain products
-     * from one branch only.
+     * The cart is restricted to one branch only.
      */
     public function saveBranchMeta(
         WC_Order $order,
@@ -54,10 +68,8 @@ final class OrderMetaManager
         $branchId = null;
 
         /*
-         * All cart items must belong to the same branch.
-         *
-         * We only need the branch from the first item because
-         * CartValidator prevents mixing different branches.
+         * All products in the cart must belong
+         * to the same branch.
          */
         foreach ($cart->get_cart() as $cartItem) {
 
@@ -107,5 +119,52 @@ final class OrderMetaManager
             '_wcbm_branch_slug',
             $branch->slug()
         );
+    }
+
+    /**
+     * Display branch name below the product
+     * in the WooCommerce order items table.
+     *
+     * @param int                    $itemId
+     * @param WC_Order_Item_Product  $item
+     * @param WC_Product|null        $product
+     */
+    public function displayBranchInOrderItem(
+        int $itemId,
+        $item,
+        $product = null
+    ): void {
+
+        if (! $item instanceof WC_Order_Item_Product) {
+            return;
+        }
+
+        $order = $item->get_order();
+
+        if (! $order instanceof WC_Order) {
+            return;
+        }
+
+        $branchName = $order->get_meta(
+            '_wcbm_branch_name',
+            true
+        );
+
+        if ($branchName === '') {
+            return;
+        }
+
+        ?>
+        <div class="wcbm-order-item-branch">
+            <strong>
+                <?php esc_html_e(
+                    'Branch:',
+                    'alnaseeg-branch-manager'
+                ); ?>
+            </strong>
+
+            <?php echo esc_html($branchName); ?>
+        </div>
+        <?php
     }
 }
