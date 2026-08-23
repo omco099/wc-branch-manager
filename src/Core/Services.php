@@ -164,15 +164,12 @@ final class Services
     }
 
     /**
-     * Branch cart manager.
-     */
+    * Branch cart manager.
+    */
     public function branchCartManager(): BranchCartManager
     {
         return $this->services[__METHOD__]
-            ??= new BranchCartManager(
-                $this->branchResolver(),
-                $this->productRepository()
-            );
+            ??= new BranchCartManager();
     }
 
     /**
