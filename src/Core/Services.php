@@ -204,7 +204,7 @@ final class Services
     {
         return $this->services[__METHOD__]
             ??= new OrderMetaManager(
-                $this->branchResolver()
-            );
+                $this->branchRepository()
+        );
     }
 }

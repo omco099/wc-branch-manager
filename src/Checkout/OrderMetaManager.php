@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Alnaseeg\BranchManager\Checkout;
 
-use Alnaseeg\BranchManager\Branch\BranchResolver;
+use Alnaseeg\BranchManager\Branch\BranchRepository;
 use WC_Order;
-
-defined('ABSPATH') || exit;
 
 /**
  * Saves branch information into WooCommerce orders.
@@ -15,7 +13,7 @@ defined('ABSPATH') || exit;
 final class OrderMetaManager
 {
     public function __construct(
-        private readonly BranchResolver $branchResolver
+        private readonly BranchRepository $branchRepository
     ) {
     }
 
@@ -33,18 +31,68 @@ final class OrderMetaManager
     }
 
     /**
-     * Save the current branch into the order metadata.
+     * Save the cart branch into the order metadata.
+     *
+     * The cart is guaranteed to contain products
+     * from one branch only.
      */
     public function saveBranchMeta(
         WC_Order $order,
         array $_data
     ): void {
-        $branch = $this->branchResolver->current();
+
+        if (! function_exists('WC')) {
+            return;
+        }
+
+        $cart = WC()->cart;
+
+        if ($cart === null || $cart->is_empty()) {
+            return;
+        }
+
+        $branchId = null;
+
+        /*
+         * All cart items must belong to the same branch.
+         *
+         * We only need the branch from the first item because
+         * CartValidator prevents mixing different branches.
+         */
+        foreach ($cart->get_cart() as $cartItem) {
+
+            if (! isset($cartItem['wcbm_branch_id'])) {
+                continue;
+            }
+
+            $currentBranchId = absint(
+                $cartItem['wcbm_branch_id']
+            );
+
+            if ($currentBranchId <= 0) {
+                continue;
+            }
+
+            $branchId = $currentBranchId;
+
+            break;
+        }
+
+        if ($branchId === null) {
+            return;
+        }
+
+        $branch = $this->branchRepository->findById(
+            $branchId
+        );
 
         if ($branch === null) {
             return;
         }
 
+        /*
+         * Save branch information to the order.
+         */
         $order->update_meta_data(
             '_wcbm_branch_id',
             $branch->id()
