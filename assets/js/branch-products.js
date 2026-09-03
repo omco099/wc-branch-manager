@@ -37,7 +37,20 @@
                 '.swiper-slide'
             ).length;
 
-            new Swiper(slider, {
+            /*
+             * Detect the second branch products instance.
+             *
+             * The Elementor parent container has:
+             *
+             * .massar-products-grid
+             *
+             * This instance must always show
+             * two products on every screen size.
+             */
+            const isTwoColumnInstance =
+                container.closest('.massar-products-grid') !== null;
+
+            const swiperOptions = {
                 slidesPerView: 2,
                 spaceBetween: 12,
 
@@ -55,9 +68,23 @@
                 pagination: {
                     el: pagination,
                     clickable: true
-                },
+                }
+            };
 
-                breakpoints: {
+            /*
+             * The default shortcode instance keeps
+             * the original responsive behavior.
+             *
+             * 2 products → mobile
+             * 3 products → tablet
+             * 4 products → desktop
+             *
+             * The .massar-products-grid instance
+             * intentionally skips these breakpoints
+             * and remains at 2 products everywhere.
+             */
+            if (!isTwoColumnInstance) {
+                swiperOptions.breakpoints = {
                     768: {
                         slidesPerView: 3,
                         spaceBetween: 18
@@ -67,8 +94,13 @@
                         slidesPerView: 4,
                         spaceBetween: 24
                     }
-                }
-            });
+                };
+            }
+
+            new Swiper(
+                slider,
+                swiperOptions
+            );
         });
     }
 
